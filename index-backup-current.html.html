@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ルール泥棒</title>
+<style>
+:root{color-scheme:dark;--bg:#171522;--panel:#242136;--panel2:#302a45;--text:#f8f4ff;--muted:#c3bbd6;--accent:#c5a5ff;--accent2:#f2c879;--danger:#ff9b9b}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#33264c,#171522 55%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;min-height:100vh;padding:20px 14px 40px}
+main{max-width:620px;margin:auto}
+header{text-align:center;margin:10px 0 24px}
+h1{font-size:clamp(30px,8vw,44px);margin:0;color:#f3d6ff;letter-spacing:.04em}
+.subtitle{color:var(--muted);margin:8px 0 0}
+.card{background:rgba(36,33,54,.96);border:1px solid #4c4164;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 8px 24px #0002}
+h2{font-size:19px;margin:0 0 12px}
+label{display:block;font-size:14px;color:var(--muted);margin:12px 0 6px}
+input{width:100%;border-radius:10px;border:1px solid #655779;background:#171522;color:var(--text);padding:12px;font-size:16px}
+button{width:100%;border:0;border-radius:11px;padding:13px 14px;margin-top:12px;background:var(--accent);color:#21152f;font-size:16px;font-weight:700;cursor:pointer}
+button.secondary{background:var(--panel2);color:var(--text);border:1px solid #655779}
+button:disabled{opacity:.55}
+.row{display:flex;gap:8px}.row button{flex:1}
+.note{font-size:13px;color:var(--muted);line-height:1.6}
+.status{white-space:pre-wrap;line-height:1.6;margin-top:12px;font-size:14px}
+.code{font-size:30px;font-weight:800;letter-spacing:.16em;text-align:center;color:var(--accent2);padding:8px}
+.players{list-style:none;padding:0;margin:10px 0 0}
+.players li{padding:10px 12px;margin-top:7px;background:#171522;border:1px solid #4c4164;border-radius:10px}
+details summary{cursor:pointer;font-weight:700}
+.small{font-size:12px;color:var(--muted)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>🐾 ルール泥棒</h1>
+<p class="subtitle">ルールを奪い合う、心理戦オンラインゲーム</p>
+</header>
+
+<section class="card">
+<h2>プレイヤー名</h2>
+<label for="playerName">あなたの名前（1〜16文字）</label>
+<input id="playerName" maxlength="16" placeholder="例：うさぎ" autocomplete="nickname">
+<div class="row">
+<button id="createBtn">部屋を作る</button>
+</div>
+<label for="roomCode">招待コードを入力</label>
+<input id="roomCode" maxlength="6" placeholder="6文字のコード" autocapitalize="characters" autocomplete="off">
+<button id="joinBtn" class="secondary">コードで参加</button>
+<div id="mainStatus" class="status" role="status"></div>
+</section>
+
+<section id="roomCard" class="card hidden">
+<h2>待機部屋</h2>
+<p class="note">招待コードを友達に伝えてね。</p>
+<div id="shownCode" class="code"></div>
+<button id="copyBtn" class="secondary">コードをコピー</button>
+<h2 style="margin-top:20px">参加プレイヤー</h2>
+<p id="playerCount" class="note">参加者を確認しています…</p>
+<ul id="playersList" class="players"></ul>
+<button id="refreshBtn" class="secondary">参加者を更新</button>
+<div id="roomStatus" class="status" role="status"></div>
+</section>
+
+<section class="card">
+<details>
+<summary>接続設定</summary>
+<label for="supabaseUrl">Supabase URL</label>
+<input id="supabaseUrl" inputmode="url" placeholder="https://xxxx.supabase.co" value="https://dqtvxxrpjqcvbzazvteu.supabase.co">
+<label for="publishableKey">Publishable key（公開用キー）</label>
+<input id="publishableKey" autocomplete="off" placeholder="sb_publishable_...">
+<button id="saveSettings">設定を保存</button>
+<p class="note">SupabaseのPublishable keyだけを使用してね。Secret keyやservice_roleキーは入力しないでください。</p>
+<div id="settingsStatus" class="status" role="status"></div>
+</details>
+</section>
+<p class="note">※現在は部屋作成・参加・参加者一覧までの試作版です。カード選択やルールの奪い合いなど、ゲーム本編はこれから実装します。</p>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const DEFAULT_URL = "https://dqtvxxrpjqcvbzazvteu.supabase.co";
+let currentRoomCode = "";
+let refreshTimer = null;
+
+function config() {
+  return {
+    url: ($("supabaseUrl").value || "").trim().replace(/\/+$/, ""),
+    key: ($("publishableKey").value || "").trim()
+  };
+}
+function setStatus(id, text, isError=false) {
+  const el = $(id);
+  el.textContent = text;
+  el.style.color = isError ? "var(--danger)" : "var(--muted)";
+}
+function saveSettings(silent=false) {
+  const c = config();
+  if (!/^https:\/\/[a-zA-Z0-9.-]+\.supabase\.co$/.test(c.url)) {
+    setStatus("settingsStatus", "Supabase URLを確認してください。", true);
+    return false;
+  }
+  if (!c.key || c.key.startsWith("sb_secret_") || /service_role/i.test(c.key)) {
+    setStatus("settingsStatus", "Publishable keyを入力してください。Secret keyは使えません。", true);
+    return false;
+  }
+  try {
+    localStorage.setItem("rt_supabase_url", c.url);
+    localStorage.setItem("rt_supabase_key", c.key);
+  } catch(e) {}
+  if (!silent) setStatus("settingsStatus", "設定を保存しました。");
+  return true;
+}
+function loadSettings() {
+  try {
+    $("supabaseUrl").value = localStorage.getItem("rt_supabase_url") || DEFAULT_URL;
+    $("publishableKey").value = localStorage.getItem("rt_supabase_key") || "";
+  } catch(e) { $("supabaseUrl").value = DEFAULT_URL; }
+}
+async function rpc(name, body) {
+  if (!saveSettings(true)) throw new Error("接続設定を確認してください。");
+  const c = config();
+  let response;
+  try {
+    response = await fetch(c.url + "/rest/v1/rpc/" + name, {
+      method: "POST",
+      headers: {"apikey": c.key, "Authorization": "Bearer " + c.key, "Content-Type": "application/json"},
+      body: JSON.stringify(body)
+    });
+  } catch(e) {
+    throw new Error("Supabaseに接続できませんでした。通信環境を確認してください。");
+  }
+  const text = await response.text();
+  let data;
+  try { data = text ? JSON.parse(text) : null; } catch(e) { data = text; }
+  if (!response.ok) {
+    const message = data && (data.message || data.details || data.hint) ? [data.message,data.details,data.hint].filter(Boolean).join(" ") : "HTTP " + response.status;
+    throw new Error(message);
+  }
+  return data;
+}
+function validateName() {
+  const name = $("playerName").value.trim();
+  if (!name || name.length > 16) throw new Error("プレイヤー名を1〜16文字で入力してください。");
+  return name;
+}
+function normalizeRoomCode(value) { return (value || "").trim().toUpperCase(); }
+function showRoom(code) {
+  currentRoomCode = code;
+  $("shownCode").textContent = code;
+  $("roomCard").classList.remove("hidden");
+  $("roomCode").value = code;
+}
+async function createRoom() {
+  $("createBtn").disabled = true;
+  setStatus("mainStatus", "部屋を作成しています…");
+  try {
+    const data = await rpc("create_game_room", {p_player_name: validateName()});
+    if (!Array.isArray(data) || !data[0] || !data[0].room_code) throw new Error("部屋コードを受け取れませんでした。");
+    showRoom(data[0].room_code);
+    setStatus("mainStatus", "部屋を作成しました。友達に6文字の招待コードを伝えてください。");
+    setStatus("roomStatus", "部屋の作成に成功しました。");
+    await refreshPlayers();
+    startRefresh();
+  } catch(e) {
+    setStatus("mainStatus", "部屋を作成できませんでした。\n" + e.message, true);
+  } finally { $("createBtn").disabled = false; }
+}
+async function joinRoom() {
+  $("joinBtn").disabled = true;
+  setStatus("mainStatus", "部屋に参加しています…");
+  try {
+    const code = normalizeRoomCode($("roomCode").value);
+    if (!/^[A-Z0-9]{6}$/.test(code)) throw new Error("6文字の招待コードを入力してください。");
+    const data = await rpc("join_game_room", {p_room_code: code, p_player_name: validateName()});
+    if (!Array.isArray(data) || !data[0] || !data[0].room_code) throw new Error("参加結果を受け取れませんでした。");
+    showRoom(data[0].room_code);
+    setStatus("mainStatus", "部屋に参加しました。");
+    setStatus("roomStatus", "部屋への参加に成功しました。");
+    await refreshPlayers();
+    startRefresh();
+  } catch(e) {
+    setStatus("mainStatus", "部屋に参加できませんでした。\n" + e.message, true);
+  } finally { $("joinBtn").disabled = false; }
+}
+async function refreshPlayers() {
+  if (!currentRoomCode) return;
+  try {
+    const data = await rpc("get_game_players", {p_room_code: currentRoomCode});
+    const players = Array.isArray(data) ? data : [];
+    $("playersList").replaceChildren();
+    for (const p of players) {
+      const li = document.createElement("li");
+      li.textContent = p.player_name || "名前なし";
+      $("playersList").appendChild(li);
+    }
+    $("playerCount").textContent = "参加人数：" + players.length + "人（最大4人）";
+    setStatus("roomStatus", players.length ? "参加者一覧を更新しました。" : "まだ参加者がいません。");
+  } catch(e) {
+    setStatus("roomStatus", "参加者一覧を取得できませんでした。\n" + e.message, true);
+  }
+}
+function startRefresh() {
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(refreshPlayers, 5000);
+}
+$("createBtn").addEventListener("click", createRoom);
+$("joinBtn").addEventListener("click", joinRoom);
+$("saveSettings").addEventListener("click", () => saveSettings(false));
+$("refreshBtn").addEventListener("click", refreshPlayers);
+$("copyBtn").addEventListener("click", async () => {
+  if (!currentRoomCode) return;
+  try {
+    await navigator.clipboard.writeText(currentRoomCode);
+    setStatus("roomStatus", "招待コードをコピーしました。");
+  } catch(e) {
+    $("roomCode").value = currentRoomCode;
+    $("roomCode").focus();
+    $("roomCode").select();
+    setStatus("roomStatus", "コードを選択したよ。長押ししてコピーしてね。");
+  }
+});
+loadSettings();
+</script>
+</body>
+</html>
