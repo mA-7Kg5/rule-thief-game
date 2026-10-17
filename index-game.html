@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🐾 ルール泥棒</title>
+<style>
+:root{color-scheme:dark;--bg:#101018;--panel:#1b1b29;--line:#39394d;--accent:#b6a0ff;--accent2:#ffd479;--text:#f7f5ff;--muted:#b7b4c9;--danger:#ff9b9b}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#28213b 0,#101018 55%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;min-height:100vh}
+main{width:min(760px,100%);margin:0 auto;padding:22px 16px 48px}
+h1{text-align:center;font-size:28px;margin:8px 0 4px}
+.sub{text-align:center;color:var(--muted);font-size:13px;margin:0 0 22px}
+.panel{background:rgba(27,27,41,.96);border:1px solid var(--line);border-radius:18px;padding:16px;margin:14px 0;box-shadow:0 10px 28px #0002}
+h2{font-size:18px;margin:0 0 12px}
+label{display:block;color:var(--muted);font-size:13px;margin:10px 0 6px}
+input,select,button{font:inherit}
+input,select{width:100%;background:#11111b;color:var(--text);border:1px solid #48485e;border-radius:11px;padding:12px}
+button{border:0;border-radius:12px;padding:12px 14px;background:var(--accent);color:#171323;font-weight:750;cursor:pointer}
+button.secondary{background:#343348;color:var(--text);border:1px solid #50506a}
+button:disabled{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1;min-width:0}
+button.full{width:100%;margin-top:10px}
+.small{font-size:12px;color:var(--muted);line-height:1.5}
+.status{margin:12px 0;padding:10px 12px;border-radius:10px;background:#11111b;color:var(--muted);font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
+.status.error{color:var(--danger);border:1px solid #76434b}
+.hidden{display:none!important}
+.code{font-size:28px;letter-spacing:5px;text-align:center;color:var(--accent2);font-weight:800;margin:8px}
+.players{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.player{padding:10px;border-radius:10px;background:#262538;border:1px solid #414057}
+.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:14px 0}
+.card{padding:14px 0;font-size:24px;border-radius:13px;background:#2a2740;border:1px solid #63558b;color:#fff}
+.card.selected{background:var(--accent);color:#171323;outline:3px solid #e0d6ff}
+.score-row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #343348;font-size:14px}
+.result{padding:12px;border-radius:12px;background:#29233a;margin-top:10px;line-height:1.6}
+details summary{cursor:pointer;color:var(--muted)}
+footer{text-align:center;color:#858198;font-size:11px;margin-top:20px}
+@media(min-width:600px){main{padding-top:32px}.panel{padding:20px}}
+</style>
+</head>
+<body>
+<main>
+<h1>🐾 ルール泥棒</h1>
+<p class="sub">友達と遊ぶオンライン対戦・テスト版</p>
+
+<section class="panel" id="connectPanel">
+<h2>接続設定</h2>
+<label for="supabaseUrl">Supabase Project URL</label>
+<input id="supabaseUrl" type="url" value="https://dqtvxxrpjqcvbzazvteu.supabase.co" placeholder="https://xxxx.supabase.co" autocomplete="url">
+<label for="supabaseKey">Publishable key</label>
+<input id="supabaseKey" type="password" placeholder="sb_publishable_... を入力" autocomplete="off">
+<button class="full" id="saveSettings">接続設定を保存</button>
+<p class="small">Publishable keyのみを使用してね。Secret key / service_role keyは入力しないでください。</p>
+<div id="settingsStatus" class="status">接続設定を確認してください。</div>
+</section>
+
+<section class="panel" id="lobbyPanel">
+<h2>プレイヤー・部屋</h2>
+<label for="playerName">プレイヤー名（1〜16文字）</label>
+<input id="playerName" maxlength="16" placeholder="例：うさぎ" autocomplete="nickname">
+<button class="full" id="createRoom">部屋を作る</button>
+<div class="row" style="margin-top:12px">
+<input id="roomCodeInput" maxlength="6" placeholder="招待コード" autocapitalize="characters" autocomplete="off">
+<button id="joinRoom">コードで参加</button>
+</div>
+<div id="lobbyStatus" class="status">名前を入力して部屋を作るか、招待コードで参加してね。</div>
+</section>
+
+<section class="panel hidden" id="waitingPanel">
+<h2>待機部屋</h2>
+<p class="small">友達には同じゲームリンクと、この招待コードを送ってね。</p>
+<div class="code" id="roomCodeDisplay">------</div>
+<button class="full secondary" id="copyCode">招待コードをコピー</button>
+<h2 style="margin-top:18px">参加プレイヤー</h2>
+<div class="players" id="playersList"></div>
+<div class="row" style="margin-top:10px">
+<label for="rounds" style="margin:0;align-self:center">ラウンド数</label>
+<select id="rounds">
+<option value="5">5ラウンド</option>
+<option value="8" selected>8ラウンド</option>
+<option value="10">10ラウンド</option>
+<option value="12">12ラウンド</option>
+</select>
+</div>
+<button class="full" id="startGame">ゲーム開始</button>
+<div class="small">開始には2〜4人が必要です。</div>
+</section>
+
+<section class="panel hidden" id="gamePanel">
+<h2>対戦中</h2>
+<div id="roundHeading" style="font-weight:800;font-size:20px">第1ラウンド</div>
+<div id="gameMessage" class="status">数字カードを1枚選んでね。</div>
+<div class="cards" id="cardChoices">
+<button class="card" data-card="1">1</button><button class="card" data-card="2">2</button><button class="card" data-card="3">3</button><button class="card" data-card="4">4</button><button class="card" data-card="5">5</button>
+</div>
+<button class="full" id="submitCard" disabled>この数字で提出</button>
+<div id="roundStatus" class="status">提出状況を確認中…</div>
+<div id="lastResult" class="result hidden"></div>
+<h2 style="margin-top:18px">得点</h2>
+<div id="scoreList"></div>
+<button class="full secondary" id="refreshGame">状態を更新</button>
+</section>
+
+<section class="panel hidden" id="finishedPanel">
+<h2>🏆 ゲーム終了！</h2>
+<div id="finalResult"></div>
+<button class="full secondary" id="backToLobby">待機部屋に戻る</button>
+</section>
+
+<footer>現在は基本の数字勝負のテスト版。ルールカード・盗む・防御などは今後追加します。</footer>
+</main>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const urlInput=$('supabaseUrl'), keyInput=$('supabaseKey');
+let roomCode='', playerId='', playerName='', selectedCard=null, pollTimer=null, resolving=false, lastShownRound=null;
+const storage={url:'rt_supabase_url',key:'rt_supabase_key'};
+urlInput.value=localStorage.getItem(storage.url)||urlInput.value;
+keyInput.value=localStorage.getItem(storage.key)||'';
+
+function status(id,msg,error=false){const el=$(id);el.textContent=msg;el.classList.toggle('error',error);}
+function config(){
+ const url=urlInput.value.trim().replace(/\/+$/,'');
+ const key=keyInput.value.trim();
+ if(!/^https:\/\/[a-z0-9.-]+\.supabase\.co$/i.test(url)) throw new Error('Supabase URLを確認してください。');
+ if(!key || key.startsWith('sb_secret_') || key.toLowerCase().includes('service_role')) throw new Error('Publishable keyを入力してください。Secret keyは使えません。');
+ return {url,key};
+}
+async function rpc(name,args){
+ const {url,key}=config();
+ const res=await fetch(`${url}/rest/v1/rpc/${name}`,{
+  method:'POST',headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify(args)
+ });
+ const raw=await res.text(); let data;
+ try{data=raw?JSON.parse(raw):null}catch{data=raw}
+ if(!res.ok) throw new Error(data?.message||data?.hint||data?.details||String(raw)||`通信エラー (${res.status})`);
+ return data;
+}
+function show(el){$(el).classList.remove('hidden');}
+function hide(el){$(el).classList.add('hidden');}
+function stopPolling(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}}
+function showWaiting(){show('waitingPanel');hide('gamePanel');hide('finishedPanel');$('roomCodeDisplay').textContent=roomCode;}
+function renderPlayers(players){
+ const list=$('playersList');list.replaceChildren();
+ (players||[]).forEach(p=>{const div=document.createElement('div');div.className='player';div.textContent=p.player_name+(p.player_id===playerId?'（あなた）':'');list.appendChild(div);});
+ if(!players||!players.length) list.textContent='参加者を読み込み中…';
+}
+async function refreshPlayers(){
+ if(!roomCode)return;
+ const players=await rpc('get_game_players',{p_room_code:roomCode});
+ renderPlayers(players);
+}
+async function createOrJoin(kind){
+ try{
+  config();
+  playerName=$('playerName').value.trim();
+  if(!playerName||playerName.length>16)throw new Error('プレイヤー名を1〜16文字で入力してください。');
+  const result=kind==='create'
+   ? await rpc('create_game_room',{p_player_name:playerName})
+   : await rpc('join_game_room',{p_room_code:$('roomCodeInput').value.trim().toUpperCase(),p_player_name:playerName});
+  roomCode=result.room_code;playerId=result.player_id;
+  localStorage.setItem('rt_room_code',roomCode);localStorage.setItem('rt_player_id',playerId);localStorage.setItem('rt_player_name',playerName);
+  $('roomCodeInput').value=roomCode;
+  showWaiting();
+  status('lobbyStatus',kind==='create'?'部屋を作成しました！友達に招待コードを送ってね。':'部屋に参加しました！');
+  await refreshPlayers();
+  startPolling();
+ }catch(e){status('lobbyStatus',e.message,true);}
+}
+async function startGame(){
+ try{
+  if(!roomCode)throw new Error('先に部屋を作るか、参加してください。');
+  const rounds=Number($('rounds').value);
+  await rpc('start_game',{p_room_code:roomCode,p_total_rounds:rounds});
+  show('gamePanel');hide('waitingPanel');hide('finishedPanel');
+  status('gameMessage','ゲーム開始！数字カードを1枚選んでね。');
+  await refreshGame();
+ }catch(e){status('lobbyStatus',e.message,true);}
+}
+function selectCard(value){
+ selectedCard=value;
+ document.querySelectorAll('.card').forEach(b=>b.classList.toggle('selected',Number(b.dataset.card)===value));
+ $('submitCard').disabled=false;
+}
+async function submitCard(){
+ try{
+  if(selectedCard===null)throw new Error('数字カードを選んでください。');
+  $('submitCard').disabled=true;
+  await rpc('submit_card',{p_room_code:roomCode,p_player_id:playerId,p_card_value:selectedCard});
+  status('gameMessage',`「${selectedCard}」を提出したよ。全員が提出するまで相手の数字は見えません。`);
+  document.querySelectorAll('.card').forEach(b=>b.disabled=true);
+  selectedCard=null;
+  await refreshGame();
+ }catch(e){status('gameMessage',e.message,true);$('submitCard').disabled=false;}
+}
+async function refreshGame(){
+ if(!roomCode)return;
+ try{
+  const [game,round]=await Promise.all([
+   rpc('get_game_state',{p_room_code:roomCode}),
+   rpc('get_round_status',{p_room_code:roomCode})
+  ]);
+  hide('waitingPanel');
+  if(game.game_status==='finished'){
+   show('finishedPanel');hide('gamePanel');
+   renderScores(game.players,game.state?.scores||{});
+   $('finalResult').textContent=game.state?.last_result ? formatResult(game.state.last_result) : 'ゲームが終了しました。';
+   return;
+  }
+  show('gamePanel');hide('finishedPanel');
+  $('roundHeading').textContent=`第${game.current_round}ラウンド / 全${game.total_rounds}ラウンド`;
+  const last=game.state?.last_result;
+  if(last && last.round!==lastShownRound){$('lastResult').textContent=formatResult(last);show('lastResult');lastShownRound=last.round;}
+  status('roundStatus',`参加人数：${round.player_count}人\n提出済み：${round.submitted_count}/${round.player_count}人`);
+  renderScores(game.players,game.state?.scores||{});
+  if(round.all_submitted && !resolving){
+   resolving=true;
+   try{await rpc('resolve_round',{p_room_code:roomCode});}
+   catch(e){/* another player's browser may have resolved it first */}
+   resolving=false;
+   await refreshGame();
+   return;
+  }
+  const alreadySubmitted=round.submitted_count>0; // detailed personal state is not exposed before reveal
+  const myScoreKey=playerId;
+  const choicesDisabled=round.current_round!==game.current_round;
+  document.querySelectorAll('.card').forEach(b=>b.disabled=false);
+  $('submitCard').disabled=selectedCard===null;
+  if(round.all_submitted){
+   status('gameMessage','全員が提出しました。結果を集計しています…');
+  }else{
+   status('gameMessage','数字カードを1枚選んでね。提出後は変更できません。');
+  }
+ }catch(e){status('gameMessage',e.message,true);}
+}
+function formatResult(r){
+ const cards=(r.cards||[]).map(c=>`${c.player_name}：${c.card_value}`).join(' / ');
+ const winner=r.tie?'引き分け！':`勝者：${r.winner}`;
+ return `第${r.round}ラウンド結果\n${cards}\n${winner}`;
+}
+function renderScores(players,scores){
+ const list=$('scoreList');list.replaceChildren();
+ (players||[]).forEach(p=>{
+  const row=document.createElement('div');row.className='score-row';
+  const name=document.createElement('span');name.textContent=p.player_name;
+  const score=document.createElement('strong');score.textContent=`${Number(scores[p.player_id]||0)}点`;
+  row.append(name,score);list.appendChild(row);
+ });
+}
+function startPolling(){
+ stopPolling();
+ pollTimer=setInterval(async()=>{
+  try{
+   if(!$('waitingPanel').classList.contains('hidden')) await refreshPlayers();
+   else if(!$('gamePanel').classList.contains('hidden')) await refreshGame();
+  }catch(e){/* next refresh will retry */}
+ },3000);
+}
+$('saveSettings').addEventListener('click',()=>{
+ try{const c=config();localStorage.setItem(storage.url,c.url);localStorage.setItem(storage.key,c.key);status('settingsStatus','接続設定を保存しました。');}
+ catch(e){status('settingsStatus',e.message,true);}
+});
+$('createRoom').addEventListener('click',()=>createOrJoin('create'));
+$('joinRoom').addEventListener('click',()=>createOrJoin('join'));
+$('startGame').addEventListener('click',startGame);
+$('submitCard').addEventListener('click',submitCard);
+$('cardChoices').addEventListener('click',e=>{const b=e.target.closest('button[data-card]');if(b&&!b.disabled)selectCard(Number(b.dataset.card));});
+$('copyCode').addEventListener('click',async()=>{
+ try{await navigator.clipboard.writeText(roomCode);status('lobbyStatus','招待コードをコピーしました！');}
+ catch{status('lobbyStatus',`招待コード：${roomCode}（長押ししてコピーしてね）`);}
+});
+$('refreshGame').addEventListener('click',refreshGame);
+$('backToLobby').addEventListener('click',()=>{showWaiting();startPolling();});
+const savedCode=localStorage.getItem('rt_room_code'),savedId=localStorage.getItem('rt_player_id'),savedName=localStorage.getItem('rt_player_name');
+if(savedName)$('playerName').value=savedName;
+if(savedCode&&savedId){roomCode=savedCode;playerId=savedId;playerName=savedName||'';$('roomCodeInput').value=roomCode;showWaiting();status('lobbyStatus','前回の部屋情報を読み込みました。');}
+})();
+</script>
+</body>
+</html>
