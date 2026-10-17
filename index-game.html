@@ -159,7 +159,9 @@ async function createOrJoin(kind){
   const result=kind==='create'
    ? await rpc('create_game_room',{p_player_name:playerName})
    : await rpc('join_game_room',{p_room_code:$('roomCodeInput').value.trim().toUpperCase(),p_player_name:playerName});
-  roomCode=result.room_code;playerId=result.player_id;
+  const row=Array.isArray(result)?result[0]:result;
+roomCode=row?.room_code;playerId=row?.player_id;
+if(!roomCode||!playerId)throw new Error('部屋情報を取得できませんでした。もう一度お試しください。');
   localStorage.setItem('rt_room_code',roomCode);localStorage.setItem('rt_player_id',playerId);localStorage.setItem('rt_player_name',playerName);
   $('roomCodeInput').value=roomCode;
   showWaiting();
