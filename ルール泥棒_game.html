@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#171322"><title>ルール泥棒</title>
+<style>
+:root{color-scheme:dark;--bg:#171322;--panel:#241d33;--line:#493a61;--gold:#f2c879;--text:#f8f2ff;--muted:#c6b9d7;--pink:#d99bdf}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#35244c,var(--bg) 65%);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;min-height:100vh}main{max-width:720px;margin:auto;padding:22px 16px 42px}.brand{text-align:center;padding:20px 0 14px}.sigil{font-size:42px}.eyebrow{font-size:12px;letter-spacing:.2em;color:var(--gold)}h1{font-size:clamp(30px,8vw,46px);margin:8px 0;color:var(--gold);letter-spacing:.06em}p{line-height:1.7;color:var(--muted)}.panel{background:#241d33eF;border:1px solid var(--line);border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 12px 32px #0002}.panel h2{margin:0 0 8px;font-size:19px}.field{display:block;margin:14px 0 6px;color:var(--muted);font-size:14px}input,select{width:100%;border:1px solid #5b4b70;border-radius:11px;background:#171322;color:var(--text);padding:13px;font:inherit}button{border:0;border-radius:12px;padding:13px 16px;background:var(--gold);color:#21172c;font-weight:750;font:inherit;cursor:pointer}button.secondary{background:#403151;color:var(--text);border:1px solid #6b5881}button:disabled{opacity:.45}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.wide{width:100%;margin-top:10px}.note{font-size:13px;border-left:3px solid var(--pink);padding-left:10px}.status{padding:10px 12px;background:#171322;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:14px;white-space:pre-wrap}.hidden{display:none!important}.small{font-size:12px}.pill{display:inline-block;padding:4px 9px;border-radius:20px;background:#403151;color:var(--gold);font-size:12px}.footer{text-align:center;font-size:12px;color:#9385a8;padding-top:12px}@media(max-width:420px){.actions{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<header class="brand"><div class="sigil">🗝️</div><div class="eyebrow">A FANTASY MIND GAME</div><h1>ルール泥棒</h1><p>ルールを盗み、読み合い、最後の勝者を目指せ。</p><span class="pill">2〜4人対戦・開発中</span></header>
+<section class="panel"><h2>🌙 オンライン対戦</h2><p>友達と遊ぶための部屋を作るか、招待コードで参加しよう。</p>
+<label class="field" for="playerName">プレイヤー名</label><input id="playerName" maxlength="16" placeholder="名前を入力（16文字まで）" autocomplete="nickname">
+<div class="actions"><button id="createBtn">部屋を作る</button><button class="secondary" id="showJoinBtn">コードで参加</button></div>
+<div id="joinArea" class="hidden"><label class="field" for="roomCode">招待コード</label><input id="roomCode" maxlength="6" placeholder="6文字のコード" autocapitalize="characters"><button id="joinBtn" class="wide">この部屋に参加</button></div>
+<div id="status" class="status" style="margin-top:14px">接続設定がまだ必要です。下の設定を入力してください。</div>
+</section>
+<section class="panel"><h2>⚙️ 接続設定</h2><p>Supabaseのプロジェクト情報を入力します。設定はこのブラウザ内に保存されます。キーをゲームのチャットに送る必要はありません。</p>
+<label class="field" for="supabaseUrl">Project URL（API URL）</label><input id="supabaseUrl" inputmode="url" placeholder="https://xxxx.supabase.co" autocomplete="url">
+<label class="field" for="supabaseKey">Publishable key</label><input id="supabaseKey" placeholder="sb_publishable_..." autocomplete="off" autocapitalize="off" spellcheck="false">
+<button id="saveConfig" class="wide">設定を保存して接続</button><p class="note">Secret key / service_role key は絶対に入力しないでください。データベース側のアクセス設定も別途必要です。</p>
+</section>
+<section class="panel"><h2>🎲 ゲームの基本ルール</h2><p>数字カードは1〜5。場のルールによって勝敗が変わり、相手のルールを盗むか、防ぐか、仕掛けるか、集中するかを選ぶ。運と心理戦を組み合わせた対戦ゲームを目指しています。</p><p class="note">現在は開発途中です。部屋作成・参加機能は、データベースの安全な接続設定を行ってから有効になります。</p></section>
+<div class="footer">RULE THIEF · prototype</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);const status=$('status');
+function setStatus(t){status.textContent=t}
+function loadConfig(){const url=localStorage.getItem('rt_supabase_url')||'https://dqtvxxrpjqcvbzazvteu.supabase.co';const key=localStorage.getItem('rt_supabase_key')||'';$('supabaseUrl').value=url;$('supabaseKey').value=key;}
+$('showJoinBtn').addEventListener('click',()=>{$('joinArea').classList.toggle('hidden');});
+$('saveConfig').addEventListener('click',()=>{const url=$('supabaseUrl').value.trim().replace(/\/$/,'');const key=$('supabaseKey').value.trim();if(!/^https:\/\/[a-zA-Z0-9-]+\.supabase\.co$/.test(url)){setStatus('Project URLを確認してください。https://xxxx.supabase.co の形式です。');return;}if(!key){setStatus('Publishable keyを入力してください。');return;}if(/^sb_secret_/i.test(key)||/service_role/i.test(key)){setStatus('危険なキーは使えません。Publishable keyを入力してください。');return;}localStorage.setItem('rt_supabase_url',url);localStorage.setItem('rt_supabase_key',key);setStatus('設定をこのブラウザに保存しました。部屋機能を有効にするには、安全なデータベース設定が次に必要です。');});
+$('createBtn').addEventListener('click',()=>setStatus('部屋作成はまだ有効になっていません。先にデータベースのアクセス設定を完成させます。'));
+$('joinBtn').addEventListener('click',()=>setStatus('部屋参加はまだ有効になっていません。先にデータベースのアクセス設定を完成させます。'));
+loadConfig();
+</script></body></html>
