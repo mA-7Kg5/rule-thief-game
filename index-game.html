@@ -257,21 +257,58 @@ function renderScores(players,scores){
  });
 }
 function startPolling(){
+  stopPolling();
+  pollTimer=setInterval(async()=>{
+    try{
+      if(!$('waitingPanel').classList.contains('hidden')){
+        const game=await rpc('get_game_state',{p_room_code:roomCode});
+        if(game.game_status==='playing'||game.game_status==='finished'){
+          await refreshGame();
+        }else{
+          await refreshPlayers();
+        }
+      }else if(!$('gamePanel').classList.contains('hidden')){
+        await refreshGame();
+      }
+    }catch(e){/* 次の更新で再試行 */}
+  },3000);
+}
+
 $('saveSettings').addEventListener('click',()=>{
- try{const c=config();localStorage.setItem(storage.url,c.url);localStorage.setItem(storage.key,c.key);status('settingsStatus','接続設定を保存しました。');}
- catch(e){status('settingsStatus',e.message,true);}
+  try{
+    const c=config();
+    localStorage.setItem(storage.url,c.url);
+    localStorage.setItem(storage.key,c.key);
+    status('settingsStatus','接続設定を保存しました。');
+  }catch(e){
+    status('settingsStatus',e.message,true);
+  }
 });
+
 $('createRoom').addEventListener('click',()=>createOrJoin('create'));
 $('joinRoom').addEventListener('click',()=>createOrJoin('join'));
 $('startGame').addEventListener('click',startGame);
 $('submitCard').addEventListener('click',submitCard);
-$('cardChoices').addEventListener('click',e=>{const b=e.target.closest('button[data-card]');if(b&&!b.disabled)selectCard(Number(b.dataset.card));});
-$('copyCode').addEventListener('click',async()=>{
- try{await navigator.clipboard.writeText(roomCode);status('lobbyStatus','招待コードをコピーしました！');}
- catch{status('lobbyStatus',`招待コード：${roomCode}（長押ししてコピーしてね）`);}
+
+$('cardChoices').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-card]');
+  if(b&&!b.disabled)selectCard(Number(b.dataset.card));
 });
+
+$('copyCode').addEventListener('click',async()=>{
+  try{
+    await navigator.clipboard.writeText(roomCode);
+    status('lobbyStatus','招待コードをコピーしました！');
+  }catch{
+    status('lobbyStatus',`招待コード：${roomCode}（長押ししてコピーしてね）`);
+  }
+});
+
 $('refreshGame').addEventListener('click',refreshGame);
-$('backToLobby').addEventListener('click',()=>{showWaiting();startPolling();});
+$('backToLobby').addEventListener('click',()=>{
+  showWaiting();
+  startPolling();
+});
 const savedCode=localStorage.getItem('rt_room_code'),savedId=localStorage.getItem('rt_player_id'),savedName=localStorage.getItem('rt_player_name');
 localStorage.setItem('rt_is_host',String(isHost));
 if(savedName)$('playerName').value=savedName;
