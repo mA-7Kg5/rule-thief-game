@@ -410,6 +410,85 @@ $("copyBtn").addEventListener("click", async () => {
   }
 });
 
+ // 数字カード提出パネル
+const cardPanel = document.createElement("section");
+cardPanel.id = "cardPlayPanel";
+cardPanel.className = "game-status hidden";
+cardPanel.innerHTML = `
+  <strong>数字カードを提出</strong>
+  <p class="note">1〜5の数字から1枚選んでね。</p>
+  <label for="cardValue">数字カード</label>
+  <select id="cardValue">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+  </select>
+  <button id="submitCardBtn">カードを提出</button>
+  <p id="cardStatus" class="status" role="status"></p>
+`;
+
+$("gameStatusPanel").insertAdjacentElement("afterend", cardPanel);
+
+// ゲーム状態に合わせてカードパネルを表示
+const originalRefreshGameState = refreshGameState;
+refreshGameState = async function() {
+  await originalRefreshGameState();
+  cardPanel.classList.toggle("hidden", !gameStarted);
+};
+
+// 数字カードを提出
+async function submitCard() {
+  const button = $("submitCardBtn");
+  button.disabled = true;
+  setStatus("cardStatus", "プレイヤーIDを確認しています…");
+
+  try {
+    if (!currentRoomCode || !gameStarted) {
+      throw new Error("ゲーム開始後に提出してください。");
+    }
+
+    const result = await rpc("get_game_state", {
+      p_room_code: currentRoomCode
+    });
+
+    const state = Array.isArray(result) ? result[0] : result;
+    const players = state && Array.isArray(state.players)
+      ? state.players
+      : [];
+
+    const myName = $("playerName").value.trim();
+    const me = players.find(p => p.player_name === myName);
+    const playerId = me && (me.player_id || me.id);
+
+    if (!playerId) {
+      throw new Error(
+        "自分のプレイヤーIDを取得できません。名前が参加時と同じか確認してください。"
+      );
+    }
+
+    const cardValue = Number($("cardValue").value);
+
+    await rpc("submit_card", {
+      p_room_code: currentRoomCode,
+      p_player_id: playerId,
+      p_card_value: cardValue
+    });
+
+    setStatus(
+      "cardStatus",
+      "数字「" + cardValue + "」を提出しました！相手の提出を待ってね。"
+    );
+  } catch(e) {
+    setStatus("cardStatus", "提出できませんでした。\n" + e.message, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+$("submitCardBtn").addEventListener("click", submitCard); 
+
 loadSettings();
 </script>
 </body>
