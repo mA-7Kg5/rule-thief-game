@@ -1,1 +1,565 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#171522">
+<title>ルール泥棒</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#171522;
+  --panel:#252039;
+  --panel2:#302844;
+  --line:#57466f;
+  --text:#f8f4ff;
+  --muted:#c3bbd6;
+  --gold:#f2c879;
+  --purple:#c5a5ff;
+  --blue:#8fcaff;
+  --danger:#ff9b9b;
+}
+*{box-sizing:border-box}
+[hidden],.hidden{display:none!important}
+body{
+  margin:0;min-height:100vh;
+  background:
+    radial-gradient(ellipse at 50% 0%,#49305f 0%,transparent 55%),
+    linear-gradient(160deg,#20192f,var(--bg) 60%);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+}
+button,input,select{font:inherit}
+button{
+  width:100%;padding:13px 14px;margin-top:10px;
+  border:1px solid transparent;border-radius:12px;
+  background:var(--purple);color:#21152f;font-weight:800;
+  cursor:pointer;touch-action:manipulation;
+}
+button:disabled{opacity:.5;cursor:wait}
+button.secondary{
+  background:var(--panel2);color:var(--text);border-color:var(--line);
+}
+button.gold{background:var(--gold);color:#302039}
+input,select{
+  width:100%;padding:12px;border-radius:10px;
+  border:1px solid var(--line);background:#171522;color:var(--text);
+  min-height:46px;
+}
+label{display:block;margin:13px 0 6px;color:var(--muted);font-size:14px}
+h1,h2,h3,p{margin-top:0}
+h1{margin-bottom:5px;font-size:clamp(30px,8vw,43px);color:#f3dcff}
+h2{font-size:20px;margin-bottom:12px}
+h3{font-size:16px;margin-bottom:8px}
+p{line-height:1.6}
+header{text-align:center;padding:22px 8px 18px}
+.subtitle{color:var(--muted);font-size:13px;margin:5px 0}
+main{width:min(100%,650px);margin:auto;padding:0 14px 24px}
+.screen{animation:appear .2s ease-out}
+@keyframes appear{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:none}}
+.panel{
+  background:rgba(37,32,57,.96);border:1px solid var(--line);
+  border-radius:18px;padding:17px;margin-bottom:13px;
+  box-shadow:0 10px 30px #0002;
+}
+.note{font-size:13px;color:var(--muted);line-height:1.6}
+.status{white-space:pre-wrap;font-size:14px;line-height:1.6;margin:10px 0 0;color:var(--muted)}
+.status.error{color:var(--danger)}
+.code{font-size:30px;font-weight:900;letter-spacing:.16em;color:var(--gold);text-align:center;padding:8px}
+.player-list{list-style:none;margin:10px 0;padding:0}
+.player-list li{background:#191628;border:1px solid var(--line);border-radius:10px;padding:11px;margin-top:7px}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.pill{border:1px solid var(--line);border-radius:99px;padding:6px 10px;font-size:12px;color:var(--gold);white-space:nowrap}
+.rule-banner{
+  border:1px solid #9b7c4b;border-radius:15px;padding:15px;text-align:center;
+  background:linear-gradient(135deg,#40304e,#242039);
+}
+.rule-symbol{font-size:29px;margin-bottom:5px}
+.round-number{color:var(--gold);font-weight:800}
+.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:14px 0}
+.number-card{
+  margin:0;padding:13px 0;min-height:68px;border:1px solid #8d73ac;
+  border-radius:12px;background:linear-gradient(160deg,#49335f,#292039);
+  color:#fff;font-size:25px;
+}
+.number-card.selected{border:2px solid var(--gold);background:#58436c;color:var(--gold)}
+.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.action-grid button{margin:0;min-height:55px}
+.action-grid button:disabled{opacity:.55}
+.action-purple{background:#59417b;color:#fff}
+.action-blue{background:#294d70;color:#fff}
+.action-gold{background:#72582e;color:#fff}
+.action-teal{background:#285c58;color:#fff}
+.score-row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #ffffff18}
+.score-row:last-child{border-bottom:0}
+.footer-note{text-align:center;padding:8px 4px}
+@media(min-width:560px){
+  main{padding-top:4px}
+  .lobby-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .lobby-grid .panel{margin-bottom:0}
+}
+@media(max-width:380px){
+  main{padding-left:10px;padding-right:10px}
+  .panel{padding:13px}
+  .cards{gap:5px}
+  .number-card{min-height:60px;font-size:22px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>🐾 ルール泥棒</h1>
+  <p class="subtitle">ルールを盗め。相手を読め。最後に笑うのは誰だ？</p>
+</header>
 
+<main>
+  <!-- ロビー入口 -->
+  <section id="entryScreen" class="screen">
+    <div class="panel">
+      <h2>🌙 ゲームに参加する</h2>
+      <label for="playerName">プレイヤー名（1〜16文字）</label>
+      <input id="playerName" maxlength="16" placeholder="例：うさぎ" autocomplete="nickname">
+      <button id="createBtn">✨ 新しい部屋を作る</button>
+      <div style="text-align:center;color:var(--muted);margin:13px 0">または</div>
+      <label for="roomCode">友達の招待コード</label>
+      <input id="roomCode" maxlength="6" placeholder="6文字のコード" autocapitalize="characters" autocomplete="off">
+      <button id="joinBtn" class="secondary">🚪 コードで参加</button>
+      <p id="mainStatus" class="status" role="status"></p>
+    </div>
+  </section>
+
+  <!-- 待機ロビー -->
+  <section id="lobbyScreen" class="screen" hidden>
+    <div class="panel">
+      <div class="topline">
+        <h2 style="margin:0">🏰 待機ロビー</h2>
+        <span class="pill">オンライン対戦</span>
+      </div>
+      <p class="note">招待コードを友達に伝えてね。</p>
+      <div id="shownCode" class="code">------</div>
+      <button id="copyBtn" class="secondary">招待コードをコピー</button>
+    </div>
+
+    <div class="lobby-grid">
+      <div class="panel">
+        <h3>👥 参加プレイヤー</h3>
+        <p id="playerCount" class="note">参加者を確認しています…</p>
+        <ul id="playersList" class="player-list"></ul>
+        <button id="refreshBtn" class="secondary">参加者を更新</button>
+      </div>
+
+      <div class="panel">
+        <h3>⚙️ ゲーム設定</h3>
+        <div id="hostControls" hidden>
+          <label for="totalRounds">ラウンド数</label>
+          <select id="totalRounds">
+            <option value="5">5ラウンド</option>
+            <option value="8">8ラウンド</option>
+            <option value="10">10ラウンド</option>
+            <option value="12">12ラウンド</option>
+          </select>
+          <button id="startGameBtn" class="gold">🎮 ゲーム開始</button>
+          <p class="note">2〜4人で開始できます。</p>
+        </div>
+        <p id="guestWaiting" class="note">ホストがゲームを開始するまで待ってね。</p>
+        <p id="roomStatus" class="status" role="status"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 対戦画面 -->
+  <section id="gameScreen" class="screen" hidden>
+    <div class="topline">
+      <button id="backToLobbyBtn" class="secondary" style="width:auto;margin:0;padding:9px 12px">← ロビー</button>
+      <span id="roundPill" class="pill">ラウンド確認中</span>
+    </div>
+
+    <div class="panel">
+      <div class="rule-banner">
+        <div class="rule-symbol">📜</div>
+        <h2 style="margin-bottom:5px">現在のルール</h2>
+        <p id="ruleText" style="margin:0">ルール情報を確認しています…</p>
+      </div>
+      <div class="topline" style="margin-top:15px;margin-bottom:0">
+        <strong>🃏 数字カードを選ぼう</strong>
+        <span class="note">1〜5</span>
+      </div>
+      <div class="cards" id="numberCards">
+        <button class="number-card" data-value="1" aria-pressed="false">1</button>
+        <button class="number-card" data-value="2" aria-pressed="false">2</button>
+        <button class="number-card" data-value="3" aria-pressed="false">3</button>
+        <button class="number-card" data-value="4" aria-pressed="false">4</button>
+        <button class="number-card" data-value="5" aria-pressed="false">5</button>
+      </div>
+      <p class="note">数字を選んでから提出してね。</p>
+      <button id="submitCardBtn" class="gold">カードを提出</button>
+      <p id="cardStatus" class="status" role="status"></p>
+    </div>
+
+    <div class="panel">
+      <h3>✨ 行動メニュー（準備中）</h3>
+      <div class="action-grid">
+        <button class="action-purple" disabled>🖐️ ルールを盗む</button>
+        <button class="action-blue" disabled>🛡️ ガード</button>
+        <button class="action-gold" disabled>⭐ 罠を仕掛ける</button>
+        <button class="action-teal" disabled>⌛ 集中</button>
+      </div>
+      <p class="note" style="margin-bottom:0;margin-top:10px">特殊行動は、基本の対戦処理が完成してから追加するよ。</p>
+    </div>
+  </section>
+
+  <!-- 結果画面：次の段階でデータと接続 -->
+  <section id="resultScreen" class="screen" hidden>
+    <div class="panel" style="text-align:center">
+      <div style="font-size:48px">👑</div>
+      <h2>ラウンド結果</h2>
+      <p id="resultText">勝敗判定機能はこれから接続します。</p>
+      <div id="scoreList"></div>
+      <button id="continueBtn" class="gold">対戦画面へ戻る</button>
+    </div>
+  </section>
+
+  <!-- 接続設定 -->
+  <section class="panel">
+    <details>
+      <summary>接続設定</summary>
+      <label for="supabaseUrl">Supabase URL</label>
+      <input id="supabaseUrl" inputmode="url" value="https://dqtvxxrpjqcvbzazvteu.supabase.co">
+      <label for="publishableKey">Publishable key（公開用キー）</label>
+      <input id="publishableKey" autocomplete="off" placeholder="sb_publishable_...">
+      <button id="saveSettings" class="secondary">設定を保存</button>
+      <p class="note">Publishable keyのみ使用してね。Secret keyやservice_roleキーは入力しないでください。</p>
+      <p id="settingsStatus" class="status" role="status"></p>
+    </details>
+  </section>
+  <p class="note footer-note">ルール泥棒 — 友達と遊ぶオンラインゲーム試作版</p>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const DEFAULT_URL = "https://dqtvxxrpjqcvbzazvteu.supabase.co";
+
+let currentRoomCode = "";
+let refreshTimer = null;
+let isHost = false;
+let gameStarted = false;
+let stateRequestRunning = false;
+let selectedCard = 1;
+let submittedRound = null;
+let currentRound = null;
+
+function config(){
+  return {
+    url:($("supabaseUrl").value || "").trim().replace(/\/+$/,""),
+    key:($("publishableKey").value || "").trim()
+  };
+}
+
+function setStatus(id,text,isError=false){
+  const el = $(id);
+  el.textContent = text;
+  el.classList.toggle("error",isError);
+}
+
+function saveSettings(silent=false){
+  const c = config();
+  if(!/^https:\/\/[a-zA-Z0-9.-]+\.supabase\.co$/.test(c.url)){
+    setStatus("settingsStatus","Supabase URLを確認してください。",true);
+    return false;
+  }
+  if(!c.key || c.key.startsWith("sb_secret_") || /service_role/i.test(c.key)){
+    setStatus("settingsStatus","Publishable keyを入力してください。Secret keyは使えません。",true);
+    return false;
+  }
+  try{
+    localStorage.setItem("rt_supabase_url",c.url);
+    localStorage.setItem("rt_supabase_key",c.key);
+  }catch(e){}
+  if(!silent) setStatus("settingsStatus","設定を保存しました。");
+  return true;
+}
+
+function loadSettings(){
+  try{
+    $("supabaseUrl").value=localStorage.getItem("rt_supabase_url") || DEFAULT_URL;
+    $("publishableKey").value=localStorage.getItem("rt_supabase_key") || "";
+  }catch(e){
+    $("supabaseUrl").value=DEFAULT_URL;
+  }
+}
+
+async function rpc(name,body){
+  if(!saveSettings(true)) throw new Error("接続設定を確認してください。");
+  const c=config();
+  let response;
+  try{
+    response=await fetch(c.url+"/rest/v1/rpc/"+name,{
+      method:"POST",
+      headers:{
+        "apikey":c.key,
+        "Authorization":"Bearer "+c.key,
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify(body)
+    });
+  }catch(e){
+    throw new Error("Supabaseに接続できませんでした。通信環境を確認してください。");
+  }
+  const text=await response.text();
+  let data;
+  try{data=text?JSON.parse(text):null;}catch(e){data=text;}
+  if(!response.ok){
+    const message=data && (data.message || data.details || data.hint)
+      ? [data.message,data.details,data.hint].filter(Boolean).join(" ")
+      : "HTTP "+response.status;
+    throw new Error(message);
+  }
+  return data;
+}
+
+function validateName(){
+  const name=$("playerName").value.trim();
+  if(!name || name.length>16) throw new Error("プレイヤー名を1〜16文字で入力してください。");
+  return name;
+}
+
+function normalizeRoomCode(value){
+  return (value || "").trim().toUpperCase();
+}
+
+function showScreen(screenId){
+  ["entryScreen","lobbyScreen","gameScreen","resultScreen"].forEach(id=>{
+    $(id).hidden=id!==screenId;
+  });
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function showRoom(code){
+  currentRoomCode=code;
+  $("shownCode").textContent=code;
+  $("roomCode").value=code;
+  $("hostControls").hidden=!isHost;
+  $("guestWaiting").hidden=isHost;
+  showScreen("lobbyScreen");
+}
+
+async function createRoom(){
+  $("createBtn").disabled=true;
+  setStatus("mainStatus","部屋を作成しています…");
+  try{
+    const name=validateName();
+    const data=await rpc("create_game_room",{p_player_name:name});
+    if(!Array.isArray(data) || !data[0] || !data[0].room_code){
+      throw new Error("部屋コードを受け取れませんでした。");
+    }
+    isHost=true;
+    gameStarted=false;
+    submittedRound=null;
+    showRoom(data[0].room_code);
+    setStatus("roomStatus","部屋を作成しました。友達に招待コードを伝えてください。");
+    await refreshAll();
+    startRefresh();
+  }catch(e){
+    setStatus("mainStatus","部屋を作成できませんでした。\n"+e.message,true);
+  }finally{
+    $("createBtn").disabled=false;
+  }
+}
+
+async function joinRoom(){
+  $("joinBtn").disabled=true;
+  setStatus("mainStatus","部屋に参加しています…");
+  try{
+    const code=normalizeRoomCode($("roomCode").value);
+    if(!/^[A-Z0-9]{6}$/.test(code)){
+      throw new Error("6文字の招待コードを入力してください。");
+    }
+    const data=await rpc("join_game_room",{
+      p_room_code:code,
+      p_player_name:validateName()
+    });
+    if(!Array.isArray(data) || !data[0] || !data[0].room_code){
+      throw new Error("参加結果を受け取れませんでした。");
+    }
+    isHost=false;
+    gameStarted=false;
+    submittedRound=null;
+    showRoom(data[0].room_code);
+    setStatus("roomStatus","部屋に参加しました。");
+    await refreshAll();
+    startRefresh();
+  }catch(e){
+    setStatus("mainStatus","部屋に参加できませんでした。\n"+e.message,true);
+  }finally{
+    $("joinBtn").disabled=false;
+  }
+}
+
+async function refreshPlayers(){
+  if(!currentRoomCode) return;
+  try{
+    const data=await rpc("get_game_players",{p_room_code:currentRoomCode});
+    const players=Array.isArray(data)?data:[];
+    $("playersList").replaceChildren();
+    players.forEach(p=>{
+      const li=document.createElement("li");
+      li.textContent=p.player_name || "名前なし";
+      $("playersList").appendChild(li);
+    });
+    $("playerCount").textContent="参加人数："+players.length+"人（最大4人）";
+  }catch(e){
+    setStatus("roomStatus","参加者一覧を取得できませんでした。\n"+e.message,true);
+  }
+}
+
+async function refreshGameState(){
+  if(!currentRoomCode || stateRequestRunning) return;
+  stateRequestRunning=true;
+  try{
+    const result=await rpc("get_game_state",{p_room_code:currentRoomCode});
+    const state=Array.isArray(result)?result[0]:result;
+    if(!state || typeof state!=="object") return;
+
+    const status=String(state.game_status || "").toLowerCase();
+    const playing=status==="playing" || status==="started";
+    const previousRound=currentRound;
+    currentRound=state.current_round ?? null;
+
+    if(currentRound!==previousRound && currentRound!==null){
+      submittedRound=null;
+      $("submitCardBtn").disabled=false;
+      setStatus("cardStatus","");
+    }
+
+    if(playing){
+      gameStarted=true;
+      showScreen("gameScreen");
+      const total=state.total_rounds;
+      $("roundPill").textContent="ROUND "+(currentRound ?? "?")+(total ? " / "+total : "");
+      $("ruleText").textContent="現在のルール情報は、ルール判定機能の実装時に表示します。";
+      setStatus("roomStatus","ゲーム状態を同期しました。");
+    }else if(!gameStarted){
+      showScreen("lobbyScreen");
+      $("hostControls").hidden=!isHost;
+      $("guestWaiting").hidden=isHost;
+    }
+  }catch(e){
+    // 一時的な取得エラーでは画面を強制的に切り替えない。
+  }finally{
+    stateRequestRunning=false;
+  }
+}
+
+async function refreshAll(){
+  await refreshPlayers();
+  await refreshGameState();
+}
+
+function startRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer=setInterval(refreshAll,5000);
+}
+
+async function startGame(){
+  if(!currentRoomCode || !isHost || gameStarted) return;
+  const rounds=Number($("totalRounds").value);
+  $("startGameBtn").disabled=true;
+  setStatus("roomStatus","ゲームを開始しています…");
+  try{
+    const result=await rpc("start_game",{
+      p_room_code:currentRoomCode,
+      p_total_rounds:rounds
+    });
+    if(result && result.success===false){
+      throw new Error(result.message || "ゲームを開始できませんでした。");
+    }
+    setStatus("roomStatus","開始処理を送信しました。状態を確認しています。");
+    await refreshGameState();
+  }catch(e){
+    setStatus("roomStatus","ゲームを開始できませんでした。\n"+e.message,true);
+  }finally{
+    $("startGameBtn").disabled=false;
+  }
+}
+
+function selectCard(value){
+  selectedCard=value;
+  document.querySelectorAll(".number-card").forEach(button=>{
+    const selected=Number(button.dataset.value)===value;
+    button.classList.toggle("selected",selected);
+    button.setAttribute("aria-pressed",String(selected));
+  });
+}
+
+async function submitCard(){
+  const button=$("submitCardBtn");
+  if(button.disabled) return;
+  button.disabled=true;
+  setStatus("cardStatus","プレイヤーIDを確認しています…");
+  try{
+    if(!currentRoomCode || !gameStarted){
+      throw new Error("ゲーム開始後に提出してください。");
+    }
+    if(currentRound!==null && submittedRound===currentRound){
+      throw new Error("このラウンドのカードは提出済みです。");
+    }
+    const result=await rpc("get_game_state",{p_room_code:currentRoomCode});
+    const state=Array.isArray(result)?result[0]:result;
+    const players=state && Array.isArray(state.players)?state.players:[];
+    const myName=$("playerName").value.trim();
+    const matches=players.filter(p=>p.player_name===myName);
+    if(matches.length!==1){
+      throw new Error("自分のプレイヤーIDを一意に確認できません。同じ名前の参加者がいないか確認してください。");
+    }
+    const playerId=matches[0].player_id || matches[0].id;
+    if(!playerId) throw new Error("自分のプレイヤーIDを取得できませんでした。");
+
+    await rpc("submit_card",{
+      p_room_code:currentRoomCode,
+      p_player_id:playerId,
+      p_card_value:selectedCard
+    });
+    submittedRound=currentRound;
+    setStatus("cardStatus","数字「"+selectedCard+"」を提出しました！相手の提出を待ってね。");
+  }catch(e){
+    setStatus("cardStatus","提出できませんでした。\n"+e.message,true);
+    button.disabled=false;
+  }
+}
+
+$("createBtn").addEventListener("click",createRoom);
+$("joinBtn").addEventListener("click",joinRoom);
+$("saveSettings").addEventListener("click",()=>saveSettings(false));
+$("refreshBtn").addEventListener("click",refreshAll);
+$("startGameBtn").addEventListener("click",startGame);
+$("submitCardBtn").addEventListener("click",submitCard);
+document.querySelectorAll(".number-card").forEach(button=>{
+  button.addEventListener("click",()=>selectCard(Number(button.dataset.value)));
+});
+$("backToLobbyBtn").addEventListener("click",()=>{
+  if(gameStarted){
+    setStatus("cardStatus","対戦は進行中です。ロビーに戻ってもゲームは終了しません。");
+  }
+  showScreen(gameStarted?"gameScreen":"lobbyScreen");
+});
+$("continueBtn").addEventListener("click",()=>{
+  showScreen(gameStarted?"gameScreen":"lobbyScreen");
+});
+$("copyBtn").addEventListener("click",async()=>{
+  if(!currentRoomCode) return;
+  try{
+    await navigator.clipboard.writeText(currentRoomCode);
+    setStatus("roomStatus","招待コードをコピーしました。");
+  }catch(e){
+    $("roomCode").value=currentRoomCode;
+    $("roomCode").focus();
+    $("roomCode").select();
+    setStatus("roomStatus","コードを選択したよ。長押ししてコピーしてね。");
+  }
+});
+
+loadSettings();
+selectCard(1);
+</script>
+</body>
+</html>
