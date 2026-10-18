@@ -269,8 +269,12 @@ function startPolling(){
         }
       }else if(!$('gamePanel').classList.contains('hidden')){
         await refreshGame();
+      }else if(!$('finishedPanel').classList.contains('hidden')){
+        await refreshGame();
       }
-    }catch(e){/* 次の更新で再試行 */}
+    }catch(e){
+      /* 次の更新で再試行 */
+    }
   },3000);
 }
 
@@ -309,10 +313,23 @@ $('backToLobby').addEventListener('click',()=>{
   showWaiting();
   startPolling();
 });
-const savedCode=localStorage.getItem('rt_room_code'),savedId=localStorage.getItem('rt_player_id'),savedName=localStorage.getItem('rt_player_name');
+
+const savedCode=localStorage.getItem('rt_room_code');
+const savedId=localStorage.getItem('rt_player_id');
+const savedName=localStorage.getItem('rt_player_name');
+
 localStorage.setItem('rt_is_host',String(isHost));
+
 if(savedName)$('playerName').value=savedName;
-if(savedCode&&savedId){roomCode=savedCode;playerId=savedId;playerName=savedName||'';$('roomCodeInput').value=roomCode;showWaiting();status('lobbyStatus','前回の部屋情報を読み込みました。');}
+
+if(savedCode&&savedId){
+  roomCode=savedCode;
+  playerId=savedId;
+  playerName=savedName||'';
+  $('roomCodeInput').value=roomCode;
+  showWaiting();
+  status('lobbyStatus','前回の部屋情報を読み込みました。');
+}
 })();
 </script>
 </body>
