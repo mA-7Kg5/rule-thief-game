@@ -257,22 +257,6 @@ function renderScores(players,scores){
  });
 }
 function startPolling(){
-  stopPolling();
-  pollTimer=setInterval(async()=>{
-    try{
-      if(!$('waitingPanel').classList.contains('hidden')){
-        const game=await rpc('get_game_state',{p_room_code:roomCode});
-        if(game.game_status==='playing'||game.game_status==='finished'){
-          await refreshGame();
-        }else{
-          await refreshPlayers();
-        }
-      }else if(!$('gamePanel').classList.contains('hidden')){
-        await refreshGame();
-      }
-    }catch(e){/* 次の更新で再試行 */}
-  },3000);
-}
 $('saveSettings').addEventListener('click',()=>{
  try{const c=config();localStorage.setItem(storage.url,c.url);localStorage.setItem(storage.key,c.key);status('settingsStatus','接続設定を保存しました。');}
  catch(e){status('settingsStatus',e.message,true);}
