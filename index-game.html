@@ -273,14 +273,6 @@ function startPolling(){
     }catch(e){/* 次の更新で再試行 */}
   },3000);
 }
- stopPolling();
- pollTimer=setInterval(async()=>{
-  try{
-   if(!$('waitingPanel').classList.contains('hidden')) await refreshPlayers();
-   else if(!$('gamePanel').classList.contains('hidden')) await refreshGame();
-  }catch(e){/* next refresh will retry */}
- },3000);
-}
 $('saveSettings').addEventListener('click',()=>{
  try{const c=config();localStorage.setItem(storage.url,c.url);localStorage.setItem(storage.key,c.key);status('settingsStatus','接続設定を保存しました。');}
  catch(e){status('settingsStatus',e.message,true);}
