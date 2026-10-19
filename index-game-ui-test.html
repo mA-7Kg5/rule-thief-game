@@ -348,7 +348,10 @@ async function createRoom(){
   setStatus("mainStatus","部屋を作成しています…");
   try{
     const name=validateName();
-    const data=await rpc("create_game_room",{p_player_name:name});
+    const data=await rpc("create_game_room",{
+  p_player_name:name,
+  p_character_id:Number(localStorage.getItem("rt_character_id") || "1")
+});
     if(!Array.isArray(data) || !data[0] || !data[0].room_code){
       throw new Error("部屋コードを受け取れませんでした。");
     }
@@ -375,9 +378,10 @@ async function joinRoom(){
       throw new Error("6文字の招待コードを入力してください。");
     }
     const data=await rpc("join_game_room",{
-      p_room_code:code,
-      p_player_name:validateName()
-    });
+  p_room_code:code,
+  p_player_name:validateName(),
+  p_character_id:Number(localStorage.getItem("rt_character_id") || "1")
+});
     if(!Array.isArray(data) || !data[0] || !data[0].room_code){
       throw new Error("参加結果を受け取れませんでした。");
     }
