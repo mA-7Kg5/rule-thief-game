@@ -406,7 +406,7 @@ async function refreshPlayers(){
     const players=Array.isArray(data)?data:[];
     $("playersList").replaceChildren();
 
-    players.forEach(p=>{
+    players.forEach((p,index)=>{
       const li=document.createElement("li");
       li.style.display="flex";
       li.style.alignItems="center";
