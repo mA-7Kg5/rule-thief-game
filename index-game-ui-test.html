@@ -405,11 +405,32 @@ async function refreshPlayers(){
     const data=await rpc("get_game_players",{p_room_code:currentRoomCode});
     const players=Array.isArray(data)?data:[];
     $("playersList").replaceChildren();
+
     players.forEach(p=>{
       const li=document.createElement("li");
-      li.textContent=p.player_name || "名前なし";
+      li.style.display="flex";
+      li.style.alignItems="center";
+      li.style.gap="10px";
+
+      const characterId=Number(p.character_id);
+      const safeId=characterId>=1 && characterId<=15
+        ? characterId : 1;
+
+      const img=document.createElement("img");
+      img.src="character-"+String(safeId).padStart(2,"0")+".png";
+      img.alt="キャラクター "+safeId;
+      img.style.width="54px";
+      img.style.height="72px";
+      img.style.objectFit="contain";
+      img.style.flex="0 0 auto";
+
+      const name=document.createElement("span");
+      name.textContent=p.player_name || "名前なし";
+
+      li.append(img,name);
       $("playersList").appendChild(li);
     });
+
     $("playerCount").textContent="参加人数："+players.length+"人（最大4人）";
   }catch(e){
     setStatus("roomStatus","参加者一覧を取得できませんでした。\n"+e.message,true);
