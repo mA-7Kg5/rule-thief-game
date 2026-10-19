@@ -560,6 +560,155 @@ $("copyBtn").addEventListener("click",async()=>{
 
 loadSettings();
 selectCard(1);
+
+/* ===== キャラクター選択機能 ===== */
+(function(){
+  const characterStyle = document.createElement("style");
+  characterStyle.textContent = `
+    .character-picker {
+      margin: 14px 0;
+      padding: 14px;
+      border: 1px solid #57466f;
+      border-radius: 14px;
+      background: #191628;
+    }
+    .character-picker h3 {
+      margin: 0 0 6px;
+      color: #f2c879;
+    }
+    .character-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 12px;
+    }
+    .character-option {
+      margin: 0;
+      padding: 5px;
+      min-width: 0;
+      border: 2px solid #57466f;
+      border-radius: 10px;
+      background: #302844;
+      color: #fff;
+      overflow: hidden;
+    }
+    .character-option.chosen {
+      border-color: #f2c879;
+      box-shadow: 0 0 0 2px #f2c87955;
+      background: #49365e;
+    }
+    .character-option img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      object-fit: contain;
+      border-radius: 5px;
+    }
+    .character-option span {
+      display: block;
+      padding: 5px 0 2px;
+      font-size: 12px;
+    }
+    .character-picker .character-hint {
+      margin: 8px 0 0;
+      color: #c3bbd6;
+      font-size: 12px;
+    }
+  `;
+  document.head.appendChild(characterStyle);
+
+  const entry = document.getElementById("entryScreen");
+  if (!entry || document.getElementById("characterPicker")) return;
+
+  const picker = document.createElement("div");
+  picker.id = "characterPicker";
+  picker.className = "character-picker";
+
+  const title = document.createElement("h3");
+  title.textContent = "🐾 キャラクターを選ぼう";
+  picker.appendChild(title);
+
+  const description = document.createElement("p");
+  description.className = "character-hint";
+  description.textContent = "好きなカードをタップして選択してね。";
+  picker.appendChild(description);
+
+  const grid = document.createElement("div");
+  grid.className = "character-grid";
+  picker.appendChild(grid);
+
+  const status = document.createElement("p");
+  status.className = "character-hint";
+  status.setAttribute("aria-live", "polite");
+  status.textContent = "キャラクターを選択してください。";
+  picker.appendChild(status);
+
+  const nameInput = document.getElementById("playerName");
+  const nameLabel = nameInput
+    ? nameInput.closest("label")
+    : null;
+  const nameArea = nameInput
+    ? nameInput.parentElement
+    : entry;
+
+  if (nameInput) {
+    nameInput.insertAdjacentElement("afterend", picker);
+  } else {
+    entry.prepend(picker);
+  }
+
+  let selected = "";
+  try {
+    selected = localStorage.getItem("rt_character_id") || "";
+  } catch(e) {}
+
+  for (let i = 1; i <= 15; i++) {
+    const id = String(i).padStart(2, "0");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "character-option";
+    button.setAttribute("aria-pressed", "false");
+
+    const img = document.createElement("img");
+    img.src = "character-" + id + ".png";
+    img.alt = "キャラクター " + i;
+    img.loading = "lazy";
+
+    img.addEventListener("error", function(){
+      button.style.borderColor = "#ff9b9b";
+      img.alt = "画像が見つかりません: character-" + id + ".png";
+      status.textContent =
+        "画像を読み込めないカードがあります。ファイル名を確認してください。";
+    });
+
+    const caption = document.createElement("span");
+    caption.textContent = "キャラクター " + i;
+
+    button.append(img, caption);
+
+    button.addEventListener("click", function(){
+      selected = id;
+      try {
+        localStorage.setItem("rt_character_id", id);
+      } catch(e) {}
+
+      grid.querySelectorAll(".character-option").forEach(function(card){
+        const active = card === button;
+        card.classList.toggle("chosen", active);
+        card.setAttribute("aria-pressed", String(active));
+      });
+
+      status.textContent = "キャラクター " + i + " を選択中！";
+    });
+
+    grid.appendChild(button);
+  }
+
+  if (selected && Number(selected) >= 1 && Number(selected) <= 15) {
+    const initial = grid.children[Number(selected) - 1];
+    if (initial) initial.click();
+  }
+})();
 </script>
 </body>
 </html>
