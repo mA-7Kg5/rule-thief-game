@@ -425,9 +425,23 @@ async function refreshPlayers(){
       img.style.flex="0 0 auto";
 
       const name=document.createElement("span");
-      name.textContent=p.player_name || "名前なし";
+name.textContent=p.player_name || "名前なし";
 
-      li.append(img,name);
+if(index===0){
+  const hostMark=document.createElement("span");
+  hostMark.textContent=" 👑 ホスト";
+  hostMark.style.display="inline-block";
+  hostMark.style.marginLeft="6px";
+  hostMark.style.padding="3px 7px";
+  hostMark.style.borderRadius="6px";
+  hostMark.style.background="#72582e";
+  hostMark.style.color="#fff";
+  hostMark.style.fontSize="11px";
+  hostMark.style.fontWeight="bold";
+  name.appendChild(hostMark);
+}
+
+li.append(img,name);
       $("playersList").appendChild(li);
     });
 
