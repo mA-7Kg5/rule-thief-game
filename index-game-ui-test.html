@@ -341,6 +341,39 @@ function showRoom(code){
   showScreen("lobbyScreen");
 }
 
+async function createRoom(){
+  $("createBtn").disabled=true;
+  setStatus("mainStatus","部屋を作成しています…");
+  try{
+    const name=validateName();
+    const data=await rpc("create_game_room_with_token",{
+      p_player_name:name,
+      p_character_id:Number(localStorage.getItem("rt_character_id") || "1")
+    });
+
+    if(!Array.isArray(data) || !data[0] ||
+       !data[0].room_code || !data[0].player_id ||
+       !data[0].player_token){
+      throw new Error("部屋情報または認証情報を受け取れませんでした。");
+    }
+
+    localStorage.setItem("rt_player_id",data[0].player_id);
+    localStorage.setItem("rt_player_token",data[0].player_token);
+
+    isHost=true;
+    gameStarted=false;
+    submittedRound=null;
+    showRoom(data[0].room_code);
+    setStatus("roomStatus","部屋を作成しました。友達に招待コードを伝えてください。");
+    await refreshAll();
+    startRefresh();
+  }catch(e){
+    setStatus("mainStatus","部屋を作成できませんでした。\n"+e.message,true);
+  }finally{
+    $("createBtn").disabled=false;
+  }
+}
+
 async function joinRoom(){
   $("joinBtn").disabled=true;
   setStatus("mainStatus","部屋に参加しています…");
@@ -379,35 +412,6 @@ async function joinRoom(){
   }
 }
 
-async function joinRoom(){
-  $("joinBtn").disabled=true;
-  setStatus("mainStatus","部屋に参加しています…");
-  try{
-    const code=normalizeRoomCode($("roomCode").value);
-    if(!/^[A-Z0-9]{6}$/.test(code)){
-      throw new Error("6文字の招待コードを入力してください。");
-    }
-    const data=await rpc("join_game_room",{
-  p_room_code:code,
-  p_player_name:validateName(),
-  p_character_id:Number(localStorage.getItem("rt_character_id") || "1")
-});
-    if(!Array.isArray(data) || !data[0] || !data[0].room_code){
-      throw new Error("参加結果を受け取れませんでした。");
-    }
-    isHost=false;
-    gameStarted=false;
-    submittedRound=null;
-    showRoom(data[0].room_code);
-    setStatus("roomStatus","部屋に参加しました。");
-    await refreshAll();
-    startRefresh();
-  }catch(e){
-    setStatus("mainStatus","部屋に参加できませんでした。\n"+e.message,true);
-  }finally{
-    $("joinBtn").disabled=false;
-  }
-}
 
 async function refreshPlayers(){
   if(!currentRoomCode) return;
