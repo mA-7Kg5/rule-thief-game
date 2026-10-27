@@ -556,16 +556,12 @@ async function submitCard(){
     if(currentRound!==null && submittedRound===currentRound){
       throw new Error("このラウンドのカードは提出済みです。");
     }
-    const result=await rpc("get_game_state",{p_room_code:currentRoomCode});
-    const state=Array.isArray(result)?result[0]:result;
-    const players=state && Array.isArray(state.players)?state.players:[];
-    const myName=$("playerName").value.trim();
-    const matches=players.filter(p=>p.player_name===myName);
-    if(matches.length!==1){
-      throw new Error("自分のプレイヤーIDを一意に確認できません。同じ名前の参加者がいないか確認してください。");
+    
+    const playerId=localStorage.getItem("rt_player_id");
+
+    if(!playerId){
+      throw new Error("プレイヤーIDが保存されていません。新しい部屋を作成するか、もう一度参加してください。");
     }
-    const playerId=matches[0].player_id || matches[0].id;
-    if(!playerId) throw new Error("自分のプレイヤーIDを取得できませんでした。");
 
     await rpc("submit_card",{
       p_room_code:currentRoomCode,
