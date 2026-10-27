@@ -245,7 +245,8 @@ let stateRequestRunning = false;
 let selectedCard = 1;
 let submittedRound = null;
 let currentRound = null;
-
+let myRuleIds = [];
+let rulesLoadedForRoom = "";
 function config(){
   return {
     url:($("supabaseUrl").value || "").trim().replace(/\/+$/,""),
