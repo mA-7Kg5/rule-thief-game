@@ -563,11 +563,13 @@ async function submitCard(){
       throw new Error("プレイヤーIDが保存されていません。新しい部屋を作成するか、もう一度参加してください。");
     }
 
-    await rpc("submit_card",{
-      p_room_code:currentRoomCode,
-      p_player_id:playerId,
-      p_card_value:selectedCard
-    });
+await rpc("submit_card_with_token",{
+  p_room_code:currentRoomCode,
+  p_player_id:playerId,
+  p_player_token:localStorage.getItem("rt_player_token"),
+  p_card_value:selectedCard
+});
+
     submittedRound=currentRound;
     setStatus("cardStatus","数字「"+selectedCard+"」を提出しました！相手の提出を待ってね。");
   }catch(e){
