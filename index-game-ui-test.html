@@ -488,9 +488,47 @@ async function refreshGameState(){
     if(playing){
       gameStarted=true;
       showScreen("gameScreen");
+
       const total=state.total_rounds;
       $("roundPill").textContent="ROUND "+(currentRound ?? "?")+(total ? " / "+total : "");
-      $("ruleText").textContent="現在のルール情報は、ルール判定機能の実装時に表示します。";
+
+      if(rulesLoadedForRoom!==currentRoomCode){
+        const playerId=localStorage.getItem("rt_player_id");
+        const playerToken=localStorage.getItem("rt_player_token");
+
+        if(playerId && playerToken){
+          const rules=await rpc("get_my_rules",{
+            p_room_code:currentRoomCode,
+            p_player_id:playerId,
+            p_player_token:playerToken
+          });
+
+          if(Array.isArray(rules) && rules.length>0){
+            myRuleIds=rules.map(rule=>rule.rule_id);
+            rulesLoadedForRoom=currentRoomCode;
+          }
+        }
+      }
+
+      const ruleNames={
+        even:"偶数派：2・4・6を出す",
+        odd:"奇数派：1・3・5を出す",
+        low:"低空飛行：1・2・3を出す",
+        high:"高みを目指せ：4・5・6を出す",
+        repeat:"前回の再現：前のラウンドと同じ数字を出す（第1ラウンドは判定なし）",
+        different:"連続禁止：前のラウンドと違う数字を出す（第1ラウンドは判定なし）",
+        higher:"強者の証：相手より大きい数字を出す（同じ数字は得点なし）",
+        lower:"あえて低く：相手より小さい数字を出す（同じ数字は得点なし）",
+        middle:"中央寄り：2・3・4・5を出す",
+        outer:"外側狙い：1・2・5・6を出す"
+      };
+
+      if(myRuleIds.length>0){
+        $("ruleText").textContent="あなたの秘密ルール：\n"+myRuleIds.map((id,index)=>(index+1)+". "+(ruleNames[id] || id)).join("\n");
+      }else{
+        $("ruleText").textContent="あなたの秘密ルールを確認しています…";
+      }
+
       setStatus("roomStatus","ゲーム状態を同期しました。");
     }else if(!gameStarted){
       showScreen("lobbyScreen");
