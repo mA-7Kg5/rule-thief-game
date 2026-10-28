@@ -546,28 +546,30 @@ function showRoundResult(result){
     const nextButton=document.createElement("button");
   nextButton.textContent="次のラウンド";
   nextButton.className="gold";
-  nextButton.addEventListener("click",async()=>{
-    nextButton.disabled=true;
-    try{
-      await rpc("advance_round_rules",{
-        p_room_code:currentRoomCode,
-        p_result_round:Number(result.round)
-      });
-      resultHandledRound=Number(result.round);
-      if(resultAdvanceTimer){
-        clearTimeout(resultAdvanceTimer);
-        resultAdvanceTimer=null;
-      }
-      await refreshGameState();
-    }catch(e){
-      nextButton.disabled=false;
-      setStatus(
-        "cardStatus",
-        "次のラウンドへ進めませんでした。\n"+e.message,
-        true
-      );
-    }
-  });
+ 
+nextButton.addEventListener("click",async()=>{
+  nextButton.disabled=true;
+  nextButton.textContent="進行中…";
+
+  try{
+    await rpc("advance_round_rules",{
+      p_room_code:currentRoomCode,
+      p_result_round:Number(result.round)
+    });
+
+    resultHandledRound=Number(result.round);
+    await refreshGameState();
+  }catch(e){
+    nextButton.disabled=false;
+    nextButton.textContent="次のラウンド";
+    setStatus(
+      "cardStatus",
+      "次のラウンドへ進めませんでした。\n"+e.message,
+      true
+    );
+  }
+});
+
   panel.appendChild(nextButton);
   panel.hidden=false;
 }
