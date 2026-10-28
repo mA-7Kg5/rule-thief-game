@@ -727,42 +727,18 @@ async function refreshGameState(){
           ? scoreResult[0]
           : scoreResult;
 
-        if(roundResult && Array.isArray(roundResult.cards)){
-          showRoundResult(roundResult);
-          setStatus(
-            "cardStatus",
-            "全員の提出が完了！結果を確認してね。"
-          );
-
+          if(roundResult && Array.isArray(roundResult.cards)){
           const resultRound=Number(roundResult.round);
 
           if(resultHandledRound!==resultRound){
             resultHandledRound=resultRound;
-
-            if(resultAdvanceTimer){
-              clearTimeout(resultAdvanceTimer);
-            }
-
-            resultAdvanceTimer=setTimeout(async()=>{
-              try{
-                await rpc("advance_round_rules",{
-                  p_room_code:currentRoomCode,
-                  p_result_round:resultRound
-                });
-
-                await refreshGameState();
-              }catch(e){
-                resultHandledRound=null;
-                setStatus(
-                  "cardStatus",
-                  "次のラウンドへ進めませんでした。\n"+e.message,
-                  true
-                );
-              }finally{
-                resultAdvanceTimer=null;
-              }
-            },4000);
+            showRoundResult(roundResult);
           }
+
+          setStatus(
+            "cardStatus",
+            "全員の提出が完了！結果を確認してね。"
+          );
         }
       }
 
