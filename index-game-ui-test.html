@@ -477,9 +477,6 @@ function showRoundResult(result){
   if(!panel){
     panel=document.createElement("section");
     panel.id="roundResultPanel";
-    panel.style.cssText=
-      "margin:16px 0;padding:16px;border:1px solid #8b79c8;"+
-      "border-radius:14px;background:#252039;color:#fff;";
 
     const gameScreen=document.getElementById("gameScreen");
     if(!gameScreen) return;
@@ -488,23 +485,19 @@ function showRoundResult(result){
   }
 
   panel.replaceChildren();
-
-  const ruleNames={
-    even:"偶数派",
-    odd:"奇数派",
-    low:"低空飛行",
-    high:"高みを目指せ",
-    repeat:"前回の再現",
-    different:"連続禁止",
-    higher:"強者の証",
-    lower:"あえて低く",
-    middle:"中央寄り",
-    outer:"外側狙い"
-  };
+  panel.style.cssText=
+    "margin:16px 0;padding:16px;border:1px solid #8b79c8;"+
+    "border-radius:14px;background:#252039;color:#fff;";
 
   const heading=document.createElement("h2");
   heading.textContent="ROUND "+result.round+" 結果";
   panel.appendChild(heading);
+
+  const subtitle=document.createElement("p");
+  subtitle.textContent="互いの数字が公開された！";
+  panel.appendChild(subtitle);
+
+  const myPlayerId=localStorage.getItem("rt_player_id");
 
   result.cards.forEach(player=>{
     const card=document.createElement("div");
@@ -520,18 +513,6 @@ function showRoundResult(result){
     number.textContent="出した数字："+player.card_value;
     card.appendChild(number);
 
-    const rules=document.createElement("p");
-    const satisfied=Array.isArray(player.satisfied_rules)
-      ? player.satisfied_rules
-      : [];
-
-    rules.textContent="成立したルール："+(
-      satisfied.length
-        ? satisfied.map(id=>ruleNames[id] || id).join("、")
-        : "なし"
-    );
-    card.appendChild(rules);
-
     const gained=document.createElement("p");
     gained.textContent="今回の獲得点："+player.points_gained+"点";
     card.appendChild(gained);
@@ -540,35 +521,82 @@ function showRoundResult(result){
     total.textContent="合計："+player.total_score+"点";
     card.appendChild(total);
 
+    if(myPlayerId && String(player.player_id)===String(myPlayerId)){
+      const rulePanel=document.createElement("div");
+      rulePanel.style.cssText=
+        "margin-top:12px;padding:12px;border:1px solid #d6b56d;"+
+        "border-radius:10px;background:#211b32;";
+
+      const ruleTitle=document.createElement("p");
+      ruleTitle.textContent="🔒 あなたの秘密ルール";
+      ruleTitle.style.cssText="color:#f0d18a;font-weight:bold;";
+      rulePanel.appendChild(ruleTitle);
+
+      const satisfied=Array.isArray(player.satisfied_rules)
+        ? player.satisfied_rules
+        : [];
+
+      const ruleNames={
+        even:"偶数派",
+        odd:"奇数派",
+        low:"低空飛行",
+        high:"高みを目指せ",
+        higher:"強者の証",
+        lower:"あえて低く",
+        middle:"中央寄り",
+        outer:"外側狙い"
+      };
+
+      const myRuleIds=Array.isArray(window.myRuleIds)
+        ? window.myRuleIds
+        : [];
+
+      if(myRuleIds.length){
+        myRuleIds.forEach(id=>{
+          const rule=document.createElement("p");
+          const hit=satisfied.includes(id);
+          rule.textContent=
+            (ruleNames[id] || id)+"："+(hit ? "成立！ +1点" : "不成立");
+          rulePanel.appendChild(rule);
+        });
+      }else{
+        const message=document.createElement("p");
+        message.textContent="秘密ルールの詳細を確認できませんでした。";
+        rulePanel.appendChild(message);
+      }
+
+      card.appendChild(rulePanel);
+    }
+
     panel.appendChild(card);
   });
 
-    const nextButton=document.createElement("button");
-  nextButton.textContent="次のラウンド";
+  const nextButton=document.createElement("button");
+  nextButton.textContent="次のラウンドへ →";
   nextButton.className="gold";
- 
-nextButton.addEventListener("click",async()=>{
-  nextButton.disabled=true;
-  nextButton.textContent="進行中…";
 
-  try{
-    await rpc("advance_round_rules",{
-      p_room_code:currentRoomCode,
-      p_result_round:Number(result.round)
-    });
+  nextButton.addEventListener("click",async()=>{
+    nextButton.disabled=true;
+    nextButton.textContent="進行中…";
 
-    resultHandledRound=Number(result.round);
-    await refreshGameState();
-  }catch(e){
-    nextButton.disabled=false;
-    nextButton.textContent="次のラウンド";
-    setStatus(
-      "cardStatus",
-      "次のラウンドへ進めませんでした。\n"+e.message,
-      true
-    );
-  }
-});
+    try{
+      await rpc("advance_round_rules",{
+        p_room_code:currentRoomCode,
+        p_result_round:Number(result.round)
+      });
+
+      resultHandledRound=Number(result.round);
+      await refreshGameState();
+    }catch(e){
+      nextButton.disabled=false;
+      nextButton.textContent="次のラウンドへ →";
+      setStatus(
+        "cardStatus",
+        "次のラウンドへ進めませんでした。\n"+e.message,
+        true
+      );
+    }
+  });
 
   panel.appendChild(nextButton);
   panel.hidden=false;
