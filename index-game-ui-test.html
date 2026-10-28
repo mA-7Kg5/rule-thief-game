@@ -247,6 +247,8 @@ let submittedRound = null;
 let currentRound = null;
 let myRuleIds = [];
 let rulesLoadedForRoom = "";
+let resultHandledRound = null;
+let resultAdvanceTimer = null;
 function config(){
   return {
     url:($("supabaseUrl").value || "").trim().replace(/\/+$/,""),
