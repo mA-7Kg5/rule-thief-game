@@ -468,6 +468,83 @@ li.append(img,name);
   }
 }
 
+function showRoundResult(result){
+  if(!result || !Array.isArray(result.cards)) return;
+
+  let panel=document.getElementById("roundResultPanel");
+
+  if(!panel){
+    panel=document.createElement("section");
+    panel.id="roundResultPanel";
+    panel.style.cssText=
+      "margin:16px 0;padding:16px;border:1px solid #8b79c8;"+
+      "border-radius:14px;background:#252039;color:#fff;";
+
+    const gameScreen=document.getElementById("gameScreen");
+    if(!gameScreen) return;
+
+    gameScreen.prepend(panel);
+  }
+
+  panel.replaceChildren();
+
+  const ruleNames={
+    even:"偶数派",
+    odd:"奇数派",
+    low:"低空飛行",
+    high:"高みを目指せ",
+    repeat:"前回の再現",
+    different:"連続禁止",
+    higher:"強者の証",
+    lower:"あえて低く",
+    middle:"中央寄り",
+    outer:"外側狙い"
+  };
+
+  const heading=document.createElement("h2");
+  heading.textContent="ROUND "+result.round+" 結果";
+  panel.appendChild(heading);
+
+  result.cards.forEach(player=>{
+    const card=document.createElement("div");
+    card.style.cssText=
+      "margin-top:12px;padding:12px;border-radius:10px;"+
+      "background:#302844;";
+
+    const name=document.createElement("h3");
+    name.textContent=player.player_name;
+    card.appendChild(name);
+
+    const number=document.createElement("p");
+    number.textContent="出した数字："+player.card_value;
+    card.appendChild(number);
+
+    const rules=document.createElement("p");
+    const satisfied=Array.isArray(player.satisfied_rules)
+      ? player.satisfied_rules
+      : [];
+
+    rules.textContent="成立したルール："+(
+      satisfied.length
+        ? satisfied.map(id=>ruleNames[id] || id).join("、")
+        : "なし"
+    );
+    card.appendChild(rules);
+
+    const gained=document.createElement("p");
+    gained.textContent="今回の獲得点："+player.points_gained+"点";
+    card.appendChild(gained);
+
+    const total=document.createElement("p");
+    total.textContent="合計："+player.total_score+"点";
+    card.appendChild(total);
+
+    panel.appendChild(card);
+  });
+
+  panel.hidden=false;
+}
+
 async function refreshGameState(){
   if(!currentRoomCode || stateRequestRunning) return;
   stateRequestRunning=true;
