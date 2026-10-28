@@ -647,43 +647,13 @@ async function refreshGameState(){
     if(playing){
       gameStarted=true;
 
-      // 結果表示中は採点を繰り返さず、次のラウンドへ進む
+           // 結果表示中は自動で進まず、ボタン操作を待つ
       if(phase==="result" && gameData.last_result){
         $("submitCardBtn").disabled=true;
         showScreen("gameScreen");
         showRoundResult(gameData.last_result);
-
-        const resultRound=Number(gameData.last_result.round);
-
-        if(resultHandledRound!==resultRound){
-          resultHandledRound=resultRound;
-
-          if(resultAdvanceTimer){
-            clearTimeout(resultAdvanceTimer);
-          }
-
-          resultAdvanceTimer=setTimeout(async()=>{
-            try{
-              await rpc("advance_round_rules",{
-                p_room_code:currentRoomCode,
-                p_result_round:resultRound
-              });
-
-              await refreshGameState();
-            }catch(e){
-              resultHandledRound=null;
-              setStatus(
-                "cardStatus",
-                "次のラウンドへ進めませんでした。\n"+e.message,
-                true
-              );
-            }finally{
-              resultAdvanceTimer=null;
-            }
-          },4000);
-        }
-
         return;
+      }
       }
 
       showScreen("gameScreen");
