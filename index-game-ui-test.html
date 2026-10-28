@@ -548,28 +548,122 @@ function showRoundResult(result){
 async function refreshGameState(){
   if(!currentRoomCode || stateRequestRunning) return;
   stateRequestRunning=true;
+
   try{
-    const result=await rpc("get_game_state",{p_room_code:currentRoomCode});
+    const result=await rpc("get_game_state",{
+      p_room_code:currentRoomCode
+    });
     const state=Array.isArray(result)?result[0]:result;
     if(!state || typeof state!=="object") return;
 
     const status=String(state.game_status || "").toLowerCase();
-    const playing=status==="playing" || status==="started";
+    const gameData=state.state && typeof state.state==="object"
+      ? state.state
+      : {};
+    const phase=gameData.phase || "playing";
     const previousRound=currentRound;
+
     currentRound=state.current_round ?? null;
 
     if(currentRound!==previousRound && currentRound!==null){
       submittedRound=null;
       $("submitCardBtn").disabled=false;
       setStatus("cardStatus","");
+
+      const panel=$("roundResultPanel");
+      if(panel) panel.hidden=true;
     }
+
+    // ゲーム終了後の最終結果
+    if(status==="finished" || phase==="finished"){
+      gameStarted=true;
+      $("submitCardBtn").disabled=true;
+
+      const lastResult=gameData.last_result;
+      showScreen("resultScreen");
+
+      if(lastResult && Array.isArray(lastResult.cards)){
+        const cards=lastResult.cards;
+        const maxScore=Math.max(
+          ...cards.map(p=>Number(p.total_score)||0)
+        );
+        const winners=cards.filter(
+          p=>(Number(p.total_score)||0)===maxScore
+        );
+
+        $("resultText").textContent=
+          winners.length===1
+            ? "ゲーム終了！優勝は「"+winners[0].player_name+"」！"
+            : "ゲーム終了！引き分け！";
+
+        $("scoreList").replaceChildren();
+
+        cards.slice().sort(
+          (a,b)=>(Number(b.total_score)||0)-(Number(a.total_score)||0)
+        ).forEach(player=>{
+          const row=document.createElement("p");
+          row.className="score-row";
+          row.textContent=
+            player.player_name+"："+player.total_score+"点";
+          $("scoreList").appendChild(row);
+        });
+      }else{
+        $("resultText").textContent="ゲームが終了しました！";
+      }
+
+      $("continueBtn").textContent="ロビーへ";
+      return;
+    }
+
+    const playing=status==="playing" || status==="started";
 
     if(playing){
       gameStarted=true;
+
+      // 結果表示中は採点を繰り返さず、次のラウンドへ進む
+      if(phase==="result" && gameData.last_result){
+        $("submitCardBtn").disabled=true;
+        showScreen("gameScreen");
+        showRoundResult(gameData.last_result);
+
+        const resultRound=Number(gameData.last_result.round);
+
+        if(resultHandledRound!==resultRound){
+          resultHandledRound=resultRound;
+
+          if(resultAdvanceTimer){
+            clearTimeout(resultAdvanceTimer);
+          }
+
+          resultAdvanceTimer=setTimeout(async()=>{
+            try{
+              await rpc("advance_round_rules",{
+                p_room_code:currentRoomCode,
+                p_result_round:resultRound
+              });
+
+              await refreshGameState();
+            }catch(e){
+              resultHandledRound=null;
+              setStatus(
+                "cardStatus",
+                "次のラウンドへ進めませんでした。\n"+e.message,
+                true
+              );
+            }finally{
+              resultAdvanceTimer=null;
+            }
+          },4000);
+        }
+
+        return;
+      }
+
       showScreen("gameScreen");
 
       const total=state.total_rounds;
-      $("roundPill").textContent="ROUND "+(currentRound ?? "?")+(total ? " / "+total : "");
+      $("roundPill").textContent=
+        "ROUND "+(currentRound ?? "?")+(total ? " / "+total : "");
 
       if(rulesLoadedForRoom!==currentRoomCode){
         const playerId=localStorage.getItem("rt_player_id");
@@ -603,17 +697,86 @@ async function refreshGameState(){
       };
 
       if(myRuleIds.length>0){
-        $("ruleText").textContent="あなたの秘密ルール：\n"+myRuleIds.map((id,index)=>(index+1)+". "+(ruleNames[id] || id)).join("\n");
+        $("ruleText").textContent=
+          "あなたの秘密ルール：\n"+
+          myRuleIds.map((id,index)=>
+            (index+1)+". "+(ruleNames[id] || id)
+          ).join("\n");
       }else{
-        $("ruleText").textContent="あなたの秘密ルールを確認しています…";
+        $("ruleText").textContent=
+          "あなたの秘密ルールを確認しています…";
+      }
+
+      // 全員が提出済みなら、ルールに基づいて採点する
+      const roundStatusResult=await rpc("get_round_status",{
+        p_room_code:currentRoomCode
+      });
+      const roundStatus=Array.isArray(roundStatusResult)
+        ? roundStatusResult[0]
+        : roundStatusResult;
+
+      if(
+        roundStatus &&
+        (roundStatus.all_submitted===true ||
+          roundStatus.all_submitted==="true")
+      ){
+        $("submitCardBtn").disabled=true;
+
+        const scoreResult=await rpc("resolve_round_rules",{
+          p_room_code:currentRoomCode
+        });
+
+        const roundResult=Array.isArray(scoreResult)
+          ? scoreResult[0]
+          : scoreResult;
+
+        if(roundResult && Array.isArray(roundResult.cards)){
+          showRoundResult(roundResult);
+          setStatus(
+            "cardStatus",
+            "全員の提出が完了！結果を確認してね。"
+          );
+
+          const resultRound=Number(roundResult.round);
+
+          if(resultHandledRound!==resultRound){
+            resultHandledRound=resultRound;
+
+            if(resultAdvanceTimer){
+              clearTimeout(resultAdvanceTimer);
+            }
+
+            resultAdvanceTimer=setTimeout(async()=>{
+              try{
+                await rpc("advance_round_rules",{
+                  p_room_code:currentRoomCode,
+                  p_result_round:resultRound
+                });
+
+                await refreshGameState();
+              }catch(e){
+                resultHandledRound=null;
+                setStatus(
+                  "cardStatus",
+                  "次のラウンドへ進めませんでした。\n"+e.message,
+                  true
+                );
+              }finally{
+                resultAdvanceTimer=null;
+              }
+            },4000);
+          }
+        }
       }
 
       setStatus("roomStatus","ゲーム状態を同期しました。");
+
     }else if(!gameStarted){
       showScreen("lobbyScreen");
       $("hostControls").hidden=!isHost;
       $("guestWaiting").hidden=isHost;
     }
+
   }catch(e){
     // 一時的な取得エラーでは画面を強制的に切り替えない。
   }finally{
