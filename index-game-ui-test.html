@@ -599,16 +599,30 @@ if(currentRound !== null && currentRound > 1){
     });
   }
 }
+// 前回の数字を選択できないようにする
+document.querySelectorAll(".number-card").forEach(button=>{
+  const cardValue=Number(button.dataset.value);
+  const forbidden=previousCard!==null &&
+    cardValue===Number(previousCard);
 
-    if(currentRound!==previousRound && currentRound!==null){
-      submittedRound=null;
-      $("submitCardBtn").disabled=false;
-      setStatus("cardStatus","");
+  button.disabled=forbidden;
+  button.classList.toggle("forbidden",forbidden);
+});
 
-      const panel=$("roundResultPanel");
-      if(panel) panel.hidden=true;
-    }
+// 選択中の数字が前回と同じなら、別の数字に変更
+if(previousCard!==null &&
+   Number(selectedCard)===Number(previousCard)){
+  selectedCard=[1,2,3,4,5,6].find(
+    value=>value!==Number(previousCard)
+  );
+}
 
+document.querySelectorAll(".number-card").forEach(button=>{
+  const selected=Number(button.dataset.value)===Number(selectedCard);
+  button.classList.toggle("selected",selected);
+  button.setAttribute("aria-pressed",String(selected));
+});
+    
     // ゲーム終了後の最終結果
     if(status==="finished" || phase==="finished"){
       gameStarted=true;
