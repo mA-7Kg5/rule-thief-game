@@ -853,7 +853,10 @@ async function submitCard(){
     if(currentRound!==null && submittedRound===currentRound){
       throw new Error("このラウンドのカードは提出済みです。");
     }
-    
+    if(previousCard!==null &&
+   Number(selectedCard)===Number(previousCard)){
+  throw new Error("前のラウンドと同じ数字は選べません。");
+}
     const playerId=localStorage.getItem("rt_player_id");
 
     if(!playerId){
