@@ -622,7 +622,15 @@ document.querySelectorAll(".number-card").forEach(button=>{
   button.classList.toggle("selected",selected);
   button.setAttribute("aria-pressed",String(selected));
 });
-    
+    // ラウンドが変わったら提出状態をリセット
+if(currentRound!==previousRound && currentRound!==null){
+  submittedRound=null;
+  $("submitCardBtn").disabled=false;
+  setStatus("cardStatus","");
+
+  const panel=$("roundResultPanel");
+  if(panel) panel.hidden=true;
+}
     // ゲーム終了後の最終結果
     if(status==="finished" || phase==="finished"){
       gameStarted=true;
