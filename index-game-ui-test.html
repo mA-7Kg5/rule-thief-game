@@ -584,6 +584,21 @@ async function refreshGameState(){
     const previousRound=currentRound;
 
     currentRound=state.current_round ?? null;
+    // 自分の前のラウンドの提出数字を取得
+previousCard = null;
+
+if(currentRound !== null && currentRound > 1){
+  const playerId = localStorage.getItem("rt_player_id");
+  const playerToken = localStorage.getItem("rt_player_token");
+
+  if(playerId && playerToken){
+    previousCard = await rpc("get_my_previous_card",{
+      p_room_code:currentRoomCode,
+      p_player_id:playerId,
+      p_player_token:playerToken
+    });
+  }
+}
 
     if(currentRound!==previousRound && currentRound!==null){
       submittedRound=null;
