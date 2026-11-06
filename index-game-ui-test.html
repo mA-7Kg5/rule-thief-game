@@ -594,11 +594,17 @@ function showRoundResult(result){
         button.className="gold";
         button.style.margin="5px";
         button.addEventListener("click",()=>{
-          accusationArea.dataset.guessedRule=id;
-          accusationArea.querySelectorAll("button").forEach(b=>{
-            b.style.opacity="0.5";
-          });
-          button.style.opacity="1";
+       accusationArea.dataset.guessedRule=id;
+
+accusationArea.querySelectorAll("button").forEach(b=>{
+  b.style.opacity="0.5";
+});
+
+button.style.opacity="1";
+
+confirmButton.disabled=false;
+confirmButton.textContent="このルールで告発する";
+confirmButton.style.opacity="1";
         });
         accusationArea.appendChild(button);
       });
