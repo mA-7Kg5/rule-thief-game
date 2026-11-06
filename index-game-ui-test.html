@@ -772,13 +772,19 @@ if(currentRound!==previousRound && currentRound!==null){
     if(playing){
       gameStarted=true;
 
-           // 結果表示中は自動で進まず、ボタン操作を待つ
-           if(phase==="result" && gameData.last_result){
-        $("submitCardBtn").disabled=true;
-        showScreen("gameScreen");
-        showRoundResult(gameData.last_result);
-        return;
-      }
+    // 結果表示中は画面を作り直さず、同じラウンドの表示を維持する
+if(phase==="result" && gameData.last_result){
+  $("submitCardBtn").disabled=true;
+
+  const resultRound=Number(gameData.last_result.round);
+
+  if(resultHandledRound!==resultRound){
+    resultHandledRound=resultRound;
+    showRoundResult(gameData.last_result);
+  }
+
+  return;
+}
 
       showScreen("gameScreen");
 
