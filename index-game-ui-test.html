@@ -607,7 +607,12 @@ function showRoundResult(result){
       confirmButton.textContent="このルールで告発する";
       confirmButton.className="gold";
       confirmButton.style.display="block";
-      confirmButton.style.margin="16px auto";
+confirmButton.style.position="relative";
+confirmButton.style.zIndex="10";
+confirmButton.style.width="90%";
+confirmButton.style.margin="20px auto";
+confirmButton.style.padding="16px";
+confirmButton.style.pointerEvents="auto";
       confirmButton.addEventListener("click",()=>{
         if(!accusationArea.dataset.guessedRule){
           alert("告発するルールを選んでください。");
