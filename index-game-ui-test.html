@@ -796,10 +796,25 @@ async function startGame(){
 }
 
 function selectCard(value){
-  selectedCard=value;
+  if(Number(value)===Number(previousCard)){
+    setStatus(
+      "cardStatus",
+      "前のラウンドで使った数字は選べません。",
+      true
+    );
+    return;
+  }
+
+  selectedCard=Number(value);
+
   document.querySelectorAll(".number-card").forEach(button=>{
-    const selected=Number(button.dataset.value)===value;
+    const cardValue=Number(button.dataset.value);
+    const selected=cardValue===selectedCard;
+    const forbidden=cardValue===Number(previousCard);
+
+    button.disabled=forbidden;
     button.classList.toggle("selected",selected);
+    button.classList.toggle("forbidden",forbidden);
     button.setAttribute("aria-pressed",String(selected));
   });
 }
