@@ -348,9 +348,16 @@ function normalizeRoomCode(value){
 }
 
 function showScreen(screenId){
+  const target=$(screenId);
+
+  // すでに表示中なら何もしない
+  if(target && !target.hidden) return;
+
   ["entryScreen","lobbyScreen","gameScreen","resultScreen"].forEach(id=>{
     $(id).hidden=id!==screenId;
   });
+
+  // 画面が切り替わったときだけ一番上へ
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
