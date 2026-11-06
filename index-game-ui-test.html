@@ -578,35 +578,74 @@ function showRoundResult(result){
       accusationArea.appendChild(ruleTitle);
 
       const ruleNames={
-        even:"偶数派",
-        odd:"奇数派",
-        low:"低空飛行",
-        high:"高みを目指せ",
-        higher:"強者の証",
-        lower:"あえて低く",
-        middle:"中央寄り",
-        outer:"外側狙い"
-      };
+  even:"偶数派",
+  odd:"奇数派",
+  low:"低空飛行",
+  high:"高みを目指せ",
+  higher:"強者の証",
+  lower:"あえて低く",
+  middle:"中央寄り",
+  outer:"外側狙い"
+};
 
-      Object.entries(ruleNames).forEach(([id,name])=>{
-        const button=document.createElement("button");
-        button.textContent=name;
-        button.className="gold";
-        button.style.margin="5px";
-        button.addEventListener("click",()=>{
-       accusationArea.dataset.guessedRule=id;
+// 確定ボタンを先に作る
+const confirmButton=document.createElement("button");
+confirmButton.textContent="ルールを選択してください";
+confirmButton.className="gold";
+confirmButton.style.display="block";
+confirmButton.style.position="relative";
+confirmButton.style.zIndex="10";
+confirmButton.style.width="90%";
+confirmButton.style.margin="20px auto";
+confirmButton.style.padding="16px";
+confirmButton.style.opacity="1";
+confirmButton.style.filter="none";
+confirmButton.style.background="#d6ad55";
+confirmButton.style.color="#241a35";
+confirmButton.style.border="2px solid #f5d98b";
+confirmButton.disabled=true;
 
-accusationArea.querySelectorAll("button").forEach(b=>{
-  b.style.opacity="0.5";
+// 8種類のルール選択ボタン
+Object.entries(ruleNames).forEach(([id,name])=>{
+  const button=document.createElement("button");
+  button.textContent=name;
+  button.className="gold";
+  button.style.margin="5px";
+
+  button.addEventListener("click",()=>{
+    accusationArea.dataset.guessedRule=id;
+
+    accusationArea.querySelectorAll(".rule-choice").forEach(b=>{
+      b.style.opacity="0.5";
+    });
+
+    button.style.opacity="1";
+
+    confirmButton.disabled=false;
+    confirmButton.textContent="このルールで告発する";
+    confirmButton.style.opacity="1";
+  });
+
+  button.classList.add("rule-choice");
+  accusationArea.appendChild(button);
 });
 
-button.style.opacity="1";
+// 告発確定
+confirmButton.addEventListener("click",()=>{
+  const guessedRule=accusationArea.dataset.guessedRule;
 
-confirmButton.disabled=false;
-confirmButton.textContent="このルールで告発する";
-confirmButton.style.opacity="1";
-        });
-        accusationArea.appendChild(button);
+  if(!guessedRule){
+    alert("告発するルールを選んでください。");
+    return;
+  }
+
+  alert(
+    "選択したルール："+ruleNames[guessedRule]+
+    "\n告発の送信処理は次の段階で実装します。"
+  );
+});
+
+accusationArea.appendChild(confirmButton);
       });
 
       const confirmButton=document.createElement("button");
