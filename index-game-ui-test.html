@@ -606,13 +606,20 @@ function showRoundResult(result){
       const confirmButton=document.createElement("button");
       confirmButton.textContent="このルールで告発する";
       confirmButton.className="gold";
-      confirmButton.style.display="block";
+    confirmButton.style.display="block";
 confirmButton.style.position="relative";
 confirmButton.style.zIndex="10";
 confirmButton.style.width="90%";
 confirmButton.style.margin="20px auto";
 confirmButton.style.padding="16px";
 confirmButton.style.pointerEvents="auto";
+confirmButton.style.opacity="1";
+confirmButton.style.filter="none";
+confirmButton.style.background="#d6ad55";
+confirmButton.style.color="#241a35";
+confirmButton.style.border="2px solid #f5d98b";
+confirmButton.disabled=true;
+confirmButton.textContent="ルールを選択してください";
       confirmButton.addEventListener("click",()=>{
         if(!accusationArea.dataset.guessedRule){
           alert("告発するルールを選んでください。");
