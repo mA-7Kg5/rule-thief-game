@@ -587,7 +587,12 @@ async function refreshGameState(){
     // 自分の前のラウンドの提出数字を取得
 previousCard = null;
 
-if(currentRound !== null && currentRound > 1){
+if(
+  currentRound !== null &&
+  currentRound > 1 &&
+  status !== "finished" &&
+  phase !== "finished"
+){
   const playerId = localStorage.getItem("rt_player_id");
   const playerToken = localStorage.getItem("rt_player_token");
 
