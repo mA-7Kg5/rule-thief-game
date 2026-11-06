@@ -543,7 +543,83 @@ function showRoundResult(result){
 
     scoreList.appendChild(card);
   });
+  // 告発・見送りの選択画面
+  const accusationArea=document.getElementById("accusationArea");
 
+  if(accusationArea){
+    accusationArea.replaceChildren();
+
+    const title=document.createElement("h3");
+    title.textContent="相手の秘密を暴く？";
+    title.style.cssText="color:#f0d18a;margin:20px 0 12px;";
+    accusationArea.appendChild(title);
+
+    const description=document.createElement("p");
+    description.textContent="相手の秘密ルールを推理して告発しよう。";
+    accusationArea.appendChild(description);
+
+    const accuseButton=document.createElement("button");
+    accuseButton.textContent="告発する";
+    accuseButton.className="gold";
+    accuseButton.style.margin="8px";
+    accuseButton.addEventListener("click",()=>{
+      accusationArea.replaceChildren();
+
+      const ruleTitle=document.createElement("h3");
+      ruleTitle.textContent="相手が持っているルールは？";
+      ruleTitle.style.cssText="color:#f0d18a;";
+      accusationArea.appendChild(ruleTitle);
+
+      const ruleNames={
+        even:"偶数派",
+        odd:"奇数派",
+        low:"低空飛行",
+        high:"高みを目指せ",
+        higher:"強者の証",
+        lower:"あえて低く",
+        middle:"中央寄り",
+        outer:"外側狙い"
+      };
+
+      Object.entries(ruleNames).forEach(([id,name])=>{
+        const button=document.createElement("button");
+        button.textContent=name;
+        button.className="gold";
+        button.style.margin="5px";
+        button.addEventListener("click",()=>{
+          accusationArea.dataset.guessedRule=id;
+          accusationArea.querySelectorAll("button").forEach(b=>{
+            b.style.opacity="0.5";
+          });
+          button.style.opacity="1";
+        });
+        accusationArea.appendChild(button);
+      });
+
+      const confirmButton=document.createElement("button");
+      confirmButton.textContent="このルールで告発する";
+      confirmButton.className="gold";
+      confirmButton.style.display="block";
+      confirmButton.style.margin="16px auto";
+      confirmButton.addEventListener("click",()=>{
+        if(!accusationArea.dataset.guessedRule){
+          alert("告発するルールを選んでください。");
+          return;
+        }
+        alert("選択したルール："+ruleNames[accusationArea.dataset.guessedRule]+"\n告発の送信処理は次の段階で実装します。");
+      });
+      accusationArea.appendChild(confirmButton);
+    });
+    accusationArea.appendChild(accuseButton);
+
+    const passButton=document.createElement("button");
+    passButton.textContent="見送る";
+    passButton.style.margin="8px";
+    passButton.addEventListener("click",()=>{
+      alert("見送りを選択しました。送信処理は次の段階で実装します。");
+    });
+    accusationArea.appendChild(passButton);
+  }
   // 次のラウンドへ進むボタン
   const nextButton=document.createElement("button");
   nextButton.textContent="次のラウンドへ →";
