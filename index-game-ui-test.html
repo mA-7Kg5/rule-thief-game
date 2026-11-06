@@ -107,6 +107,16 @@ main{width:min(100%,650px);margin:auto;padding:0 14px 24px}
   .cards{gap:5px}
   .number-card{min-height:60px;font-size:22px}
 }
+/* 前のラウンドで使った数字 */
+.number-card.forbidden{
+  opacity:0.3;
+  filter:grayscale(1);
+  cursor:not-allowed;
+  pointer-events:none;
+  transform:scale(0.96);
+  border-color:#555;
+  box-shadow:none;
+}
 </style>
 </head>
 <body>
